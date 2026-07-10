@@ -1,0 +1,492 @@
+{% load timetable_tags %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% if lang == 'uz' %}Hisobotni ko'rish{% else %}Report Preview{% endif %} — {{ teacher.full_name }}</title>
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; }
+
+        .header {
+            background: #1b497d;
+            color: white;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h2 { font-size: 18px; }
+        .header a {
+            color: white;
+            text-decoration: none;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .header a:hover { background: rgba(255,255,255,0.35); }
+
+        .month-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            padding: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #1b497d;
+        }
+        .month-nav a {
+            color: #1b497d;
+            text-decoration: none;
+            font-size: 24px;
+            padding: 4px 12px;
+            border-radius: 4px;
+            background: white;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+        .month-nav a:hover { background: #e8f0fb; }
+
+        .content { padding: 0 24px 40px 24px; }
+
+        .status-bar {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+            padding: 14px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+        .status-pill { padding: 6px 16px; border-radius: 14px; font-size: 13px; font-weight: bold; }
+        .status-pill.pending { background: #ffc107; color: #333; }
+        .status-pill.approved { background: #28a745; color: white; }
+        .status-pill.rejected { background: #dc3545; color: white; }
+        .status-pill.waiting { background: #e9ecef; color: #888; }
+        .status-label { font-size: 13px; color: #888; font-weight: bold; }
+        .rejection-note { font-size: 12px; color: #888; font-style: italic; }
+
+        .table-wrap {
+            overflow-x: auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+            margin-bottom: 24px;
+        }
+
+        table { border-collapse: collapse; min-width: 100%; white-space: nowrap; }
+
+        th {
+            background: #1b497d;
+            color: white;
+            padding: 10px 8px;
+            text-align: center;
+            font-size: 12px;
+            min-width: 36px;
+        }
+        th.teacher-col { text-align: left; min-width: 200px; padding-left: 16px; }
+        th.exam-col {
+            background: #2e5f94;
+            min-width: 52px;
+            font-size: 10px;
+            line-height: 1.25;
+            white-space: normal;
+            border-left: 2px solid #c5d8f0;
+        }
+        th.total-col { background: #163d6a; min-width: 60px; border-left: 2px solid #c5d8f0; }
+        .confirm-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.45);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+}
+.confirm-overlay.active { display: flex; }
+.confirm-box {
+    background: white;
+    border-radius: 12px;
+    padding: 28px 32px;
+    min-width: 320px;
+    max-width: 420px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+    text-align: center;
+}
+.confirm-icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+}
+.confirm-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1b3a6b;
+    margin-bottom: 8px;
+}
+.confirm-message {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 24px;
+    line-height: 1.5;
+}
+.confirm-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+.confirm-btn-ok {
+    background: #1b497d;
+    color: white;
+    border: none;
+    padding: 10px 28px;
+    border-radius: 7px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    min-width: 90px;
+}
+.confirm-btn-ok:hover { background: #163d6a; }
+.confirm-btn-ok.danger { background: #dc3545; }
+.confirm-btn-ok.danger:hover { background: #c82333; }
+.confirm-btn-ok.success { background: #28a745; }
+.confirm-btn-ok.success:hover { background: #218838; }
+.confirm-btn-cancel {
+    background: #f0f2f5;
+    color: #555;
+    border: none;
+    padding: 10px 28px;
+    border-radius: 7px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    min-width: 90px;
+}
+.confirm-btn-cancel:hover { background: #e2e5ea; }
+        td { border: 1px solid #eaeff7; padding: 10px 8px; text-align: center; font-size: 13px; }
+        td.teacher-name {
+            text-align: left;
+            padding-left: 16px;
+            font-weight: 700;
+            color: #1b3a6b;
+            background: #f7f9fc;
+            border-right: 2px solid #e0e7f0;
+        }
+        td.count-cell { color: #333; font-weight: 500; }
+        td.count-cell.has-lessons { background: #e8f5ec; color: #155724; font-weight: bold; }
+        td.count-cell.zero { color: #ccc; }
+        td.exam-cell { border-left: 2px solid #c5d8f0; color: #ccc; font-weight: 500; }
+        td.exam-cell.has-count { background: #eef4ff; color: #1b497d; font-weight: bold; }
+        td.total-cell {
+            background: #eef4ff;
+            font-weight: bold;
+            color: #1b497d;
+            font-size: 14px;
+            border-left: 2px solid #c5d8f0;
+        }
+        th.holiday-day { background: #c0392b !important; }
+        td.holiday-day { background: #fff5f5 !important; color: #dc3545 !important; }
+        .day-header-date { font-size: 13px; font-weight: bold; }
+        .day-header-name { font-size: 10px; color: rgba(255,255,255,0.7); }
+        .status-badge {
+    font-size: 11px; font-weight: bold;
+    padding: 2px 9px; border-radius: 10px; display: inline-block;
+}
+.status-badge.covered { background: #d4edda; color: #155724; }
+.status-badge.rescheduled { background: #ffeaa7; color: #856404; }
+.status-badge.pending { background: #e9ecef; color: #888; }
+.status-badge.missed { background: #fdecea; color: #721c24; }
+        .action-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            padding: 24px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+        }
+        .btn-send {
+            background: #1b497d;
+            color: white;
+            border: none;
+            padding: 12px 36px;
+            border-radius: 7px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-send:hover { background: #163d6a; }
+        .btn-back {
+            background: none;
+            border: 2px solid #1b497d;
+            color: #1b497d;
+            padding: 11px 28px;
+            border-radius: 7px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .btn-back:hover { background: #f0f4ff; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h2>{% if lang == 'uz' %}Hisobotni ko'rish{% else %}Report Preview{% endif %} — {{ teacher.full_name }}</h2>
+    <a href="{% url 'timetable' %}?year={{ year }}&month={{ month }}">← {% if lang == 'uz' %}Jadvalga qaytish{% else %}Back to Timetable{% endif %}</a>
+</div>
+
+<div class="month-nav">
+    <a href="?year={{ prev.year }}&month={{ prev.month }}">&#8249;</a>
+    {{ month_name }}
+    <a href="?year={{ next.year }}&month={{ next.month }}">&#8250;</a>
+</div>
+
+<div class="content">
+
+    {% if already_submitted and report %}
+    <div class="status-bar">
+        <span class="status-label">{% if lang == 'uz' %}Dekan{% else %}Dean{% endif %}:</span>
+        {% if report.dean_approval == "pending" %}
+            <span class="status-pill pending">⏳ {% if lang == 'uz' %}Kutilmoqda{% else %}Pending{% endif %}</span>
+        {% elif report.dean_approval == "approved" %}
+            <span class="status-pill approved">✓ {% if lang == 'uz' %}Tasdiqlandi{% else %}Approved{% endif %}</span>
+        {% elif report.dean_approval == "rejected" %}
+            <span class="status-pill rejected">✗ {% if lang == 'uz' %}Rad etildi{% else %}Rejected{% endif %}</span>
+            {% if report.dean_rejection_reason %}
+            <span class="rejection-note">— {{ report.dean_rejection_reason }}</span>
+            {% endif %}
+        {% endif %}
+
+        <span class="status-label" style="margin-left:10px;">Admin:</span>
+        {% if report.admin_approval == "waiting_dean" %}
+            <span class="status-pill waiting">{% if lang == 'uz' %}Dekanni kutmoqda{% else %}Waiting for Dean{% endif %}</span>
+        {% elif report.admin_approval == "pending" %}
+            <span class="status-pill pending">⏳ {% if lang == 'uz' %}Kutilmoqda{% else %}Pending{% endif %}</span>
+        {% elif report.admin_approval == "approved" %}
+            <span class="status-pill approved">✓ {% if lang == 'uz' %}Tasdiqlandi{% else %}Approved{% endif %}</span>
+        {% elif report.admin_approval == "rejected" %}
+            <span class="status-pill rejected">✗ {% if lang == 'uz' %}Rad etildi{% else %}Rejected{% endif %}</span>
+            {% if report.admin_rejection_reason %}
+            <span class="rejection-note">— {{ report.admin_rejection_reason }}</span>
+            {% endif %}
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+    <tr>
+        <th class="teacher-col" rowspan="2">{% if lang == 'uz' %}O'qituvchi{% else %}Teacher{% endif %}</th>
+        {% for week_num, span in week_spans %}
+        <th colspan="{{ span }}" style="background:#163d6a; font-size:11px; letter-spacing:0.5px; border-right:2px solid #2e5f94; border-bottom:1px solid #2e5f94;">
+            {% if lang == 'uz' %}Hafta{% else %}Week{% endif %} {{ week_num }}
+        </th>
+        {% endfor %}
+        <th class="exam-col" rowspan="2">{% if lang == 'uz' %}Yakuniy{% else %}Final{% endif %}</th>
+        <th class="exam-col" rowspan="2">{% if lang == 'uz' %}Oraliq{% else %}Midterm{% endif %}</th>
+        <th class="exam-col" rowspan="2">{% if lang == 'uz' %}Qayta{% else %}Retake{% endif %}</th>
+        <th class="total-col" rowspan="2">{% if lang == 'uz' %}Jami{% else %}Total{% endif %}</th>
+    </tr>
+    <tr>
+        {% for d in working_days %}
+        {% with holiday_name=holidays|get_item:d %}
+        <th {% if holiday_name %}class="holiday-day"{% endif %} style="min-width:36px;">
+            <div class="day-header-date">{{ d|date:"d" }}</div>
+            <div class="day-header-name">{{ tr.days_short|index:d.weekday }}</div>
+            {% if holiday_name %}<div style="font-size:9px;">🔴</div>{% endif %}
+        </th>
+        {% endwith %}
+        {% endfor %}
+    </tr>
+</thead>
+            <tbody>
+                <tr>
+                    <td class="teacher-name">{{ teacher.full_name }}</td>
+                    {% for d in working_days %}
+                    {% with count=day_counts|get_item:d holiday_name=holidays|get_item:d %}
+                    <td class="count-cell {% if count %}has-lessons{% else %}zero{% endif %} {% if holiday_name %}holiday-day{% endif %}">
+                        {% if holiday_name %}🔴{% elif count %}{{ count }}{% else %}—{% endif %}
+                    </td>
+                    {% endwith %}
+                    {% endfor %}
+                    <td class="exam-cell {% if exam_attendance.final_exam_count %}has-count{% endif %}">
+    {% if exam_attendance and exam_attendance.final_exam_count %}
+        {{ exam_attendance.final_exam_count }}
+        <span style="font-size:10px; color:#888; margin-left:2px;">
+            {% if lang == 'uz' %}{% if exam_attendance.final_exam_unit == 'groups' %}g{% else %}t{% endif %}{% else %}{% if exam_attendance.final_exam_unit == 'groups' %}gr{% else %}st{% endif %}{% endif %}
+        </span>
+    {% else %}—{% endif %}
+</td>
+<td class="exam-cell {% if exam_attendance.midterm_exam_count %}has-count{% endif %}">
+    {% if exam_attendance and exam_attendance.midterm_exam_count %}
+        {{ exam_attendance.midterm_exam_count }}
+        <span style="font-size:10px; color:#888; margin-left:2px;">
+            {% if lang == 'uz' %}{% if exam_attendance.midterm_exam_unit == 'groups' %}g{% else %}t{% endif %}{% else %}{% if exam_attendance.midterm_exam_unit == 'groups' %}gr{% else %}st{% endif %}{% endif %}
+        </span>
+    {% else %}—{% endif %}
+</td>
+<td class="exam-cell {% if exam_attendance.retake_exam_count %}has-count{% endif %}">
+    {% if exam_attendance and exam_attendance.retake_exam_count %}
+        {{ exam_attendance.retake_exam_count }}
+        <span style="font-size:10px; color:#888; margin-left:2px;">
+            {% if lang == 'uz' %}{% if exam_attendance.retake_exam_unit == 'groups' %}g{% else %}t{% endif %}{% else %}{% if exam_attendance.retake_exam_unit == 'groups' %}gr{% else %}st{% endif %}{% endif %}
+        </span>
+    {% else %}—{% endif %}
+</td>
+                    <td class="total-cell">{{ total }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% if rows %}
+    <div class="table-wrap" style="margin-bottom: 24px;">
+        <table>
+            <thead>
+                <tr>
+                    <th>{{ tr.report_date }}</th>
+                    <th>{{ tr.report_day }}</th>
+                    <th>{{ tr.report_subject }}</th>
+                    <th>{{ tr.report_period }}</th>
+                    <th>{{ tr.report_room }}</th>
+                    <th>{{ tr.report_type }}</th>
+                    <th>{{ tr.report_status }}</th>
+                    <th>{{ tr.report_note }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td style="white-space:nowrap;">{{ row.date|date:"d M Y" }}</td>
+                    <td>{{ row.day }}</td>
+                    <td style="text-align:left;">{{ row.subject }}</td>
+                    <td>{{ row.period }}</td>
+                    <td style="text-align:left;">{{ row.classroom }}</td>
+                    <td>{{ row.type_label }}</td>
+                    <td>
+                        <span class="status-badge {{ row.status_class }}">{{ row.status }}</span>
+                    </td>
+                    <td style="text-align:left; white-space:normal; font-size:12px;">{{ row.note }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+    <div class="action-bar">
+        <a class="btn-back" href="{% url 'timetable' %}?year={{ year }}&month={{ month }}">
+            {% if lang == 'uz' %}Bekor qilish{% else %}Cancel{% endif %}
+        </a>
+        {% if not already_submitted or report.dean_approval == "rejected" or report.admin_approval == "rejected" %}
+        <button class="btn-send" onclick="sendReport()">
+            📤 {% if lang == 'uz' %}Hisobotni yuborish{% else %}Send Report{% endif %}
+        </button>
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+const YEAR = {{ year }};
+const MONTH = {{ month }};
+
+function getCSRF() {
+    const name = 'csrftoken';
+    const cookies = document.cookie.split(';');
+    for (let c of cookies) {
+        c = c.trim();
+        if (c.startsWith(name + '=')) return decodeURIComponent(c.slice(name.length + 1));
+    }
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.content : '';
+}
+
+function sendReport() {
+    customConfirm({
+        icon: "📤",
+        title: "{% if lang == 'uz' %}Hisobot yuborish{% else %}Send Report{% endif %}",
+        message: "{% if lang == 'uz' %}Oylik hisobotingizni yuborishga ishonchingiz komilmi?{% else %}Are you sure you want to submit your monthly report?{% endif %}",
+        okText: "{% if lang == 'uz' %}Yuborish{% else %}Send{% endif %}",
+        okClass: "",
+        cancelText: "{% if lang == 'uz' %}Bekor qilish{% else %}Cancel{% endif %}"
+    }, () => {
+
+        fetch("/submit-report/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": getCSRF()
+            },
+            body: `year=${YEAR}&month=${MONTH}`
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === "submitted") {
+                window.location.href = "/timetable/?year=" + YEAR + "&month=" + MONTH;
+            } else {
+                alert(data.message || "{% if lang == 'uz' %}Xatolik yuz berdi{% else %}Failed to send report{% endif %}");
+            }
+        });
+
+    });
+}
+    function customConfirm({ icon = "❓", title = "Are you sure?", message = "", okText = "Confirm", okClass = "", cancelText = "Cancel" }, onConfirm) {
+    document.getElementById("confirmIcon").textContent = icon;
+    document.getElementById("confirmTitle").textContent = title;
+    document.getElementById("confirmMessage").textContent = message;
+
+    const okBtn = document.getElementById("confirmOk");
+    const cancelBtn = document.getElementById("confirmCancel");
+
+    okBtn.textContent = okText;
+    okBtn.className = "confirm-btn-ok" + (okClass ? " " + okClass : "");
+    cancelBtn.textContent = cancelText;
+
+    const modal = document.getElementById("confirmModal");
+    modal.classList.add("active");
+
+    // Clean up old listeners
+    const newOk = okBtn.cloneNode(true);
+    const newCancel = cancelBtn.cloneNode(true);
+    okBtn.parentNode.replaceChild(newOk, okBtn);
+    cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+
+    newOk.textContent = okText;
+    newOk.className = "confirm-btn-ok" + (okClass ? " " + okClass : "");
+    newCancel.textContent = cancelText;
+    setTimeout(() => newOk.focus(), 0);
+
+    newOk.addEventListener("click", () => {
+        modal.classList.remove("active");
+        onConfirm();
+    });
+    newCancel.addEventListener("click", () => {
+        modal.classList.remove("active");
+    });
+    modal.addEventListener("click", function handler(e) {
+        if (e.target === modal) {
+            modal.classList.remove("active");
+            modal.removeEventListener("click", handler);
+        }
+    });
+}
+</script>
+<div class="confirm-overlay" id="confirmModal">
+    <div class="confirm-box">
+        <div class="confirm-icon" id="confirmIcon">❓</div>
+        <div class="confirm-title" id="confirmTitle"></div>
+        <div class="confirm-message" id="confirmMessage"></div>
+        <div class="confirm-actions">
+            <button class="confirm-btn-cancel" id="confirmCancel">Cancel</button>
+            <button class="confirm-btn-ok" id="confirmOk">Confirm</button>
+        </div>
+    </div>
+</div>
+</body>
+</html>

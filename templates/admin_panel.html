@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Academic Affairs Department</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; }
+
+        .header {
+            background: #1b497d;
+            color: white;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h2 { font-size: 18px; color: white; }
+        .header a {
+            position: relative;
+            color: white;
+            text-decoration: none;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            border: 1px solid rgba(255,255,255,0.4);
+        }
+        .header a:hover { background: rgba(255,255,255,0.35); }
+
+        .nav-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: #dc3545;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            min-width: 16px;
+            height: 16px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+            line-height: 1;
+        }
+
+        .month-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            padding: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #1b497d;
+        }
+        .month-nav a {
+            color: #1b497d;
+            text-decoration: none;
+            font-size: 24px;
+            padding: 4px 12px;
+            border-radius: 4px;
+            background: white;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+        .month-nav a:hover { background: #e8f0fb; }
+
+        .content { padding: 24px; }
+
+        .search-bar {
+            margin-bottom: 20px;
+        }
+        .search-bar input {
+            width: 100%;
+            max-width: 400px;
+            padding: 10px 16px;
+            border: 1.5px solid #dde3ed;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+        }
+        .search-bar input:focus { border-color: #1b497d; }
+
+        .stats {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 16px 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            text-align: center;
+            min-width: 140px;
+        }
+        .stat-card .number {
+            font-size: 28px;
+            font-weight: bold;
+            color: #1b497d;
+        }
+        .stat-card .label {
+            font-size: 12px;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .teacher-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .teacher-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            cursor: pointer;
+            display: block;
+            border-left: 4px solid #dde3ed;
+            transition: all 0.15s;
+        }
+        .teacher-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            border-left-color: #1b497d;
+            transform: translateY(-1px);
+        }
+        .teacher-card.has-account { border-left-color: #28a745; }
+        .teacher-card.is-dean { border-left-color: #f39c12; }
+
+        .teacher-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1b3a6b;
+            margin-bottom: 6px;
+        }
+        .teacher-meta {
+            font-size: 12px;
+            color: #888;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .teacher-meta span { display: flex; align-items: center; gap: 6px; }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+        .badge-green { background: #d4edda; color: #155724; }
+        .badge-orange { background: #ffeaa7; color: #856404; }
+        .badge-gray { background: #e9ecef; color: #666; }
+
+        .teacher-card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid #f0f2f5;
+        }
+        .dl-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: #4a7fc1;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .dl-btn:hover { color: #1b497d; }
+        .status-tick {
+            color: #28a745;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .status-empty {
+            width: 16px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h2>🎓 {% if lang == 'uz' %}O'quv ishlari bo'limi — O'qituvchilarni boshqarish{% else %}Academic Affairs Department — Teacher Management{% endif %}</h2>
+    <div style="display:flex; gap:12px;">
+        <a href="/set-language/?lang={% if lang == 'en' %}uz{% else %}en{% endif %}&next={{ request.path }}"
+           style="font-weight:bold; font-size:13px;">
+            {% if lang == 'en' %}🇺🇿 UZ{% else %}🇬🇧 EN{% endif %}
+        </a>
+        <a href="{% url 'admin_red_days' %}">🔴 {% if lang == 'uz' %}Qizil kunlar{% else %}Red Days{% endif %}</a>
+        <a href="{% url 'admin_departments' %}">
+            🏛 {% if lang == 'uz' %}Bo'limlar{% else %}Departments{% endif %}
+            {% if pending_dept_reports > 0 %}
+            <span class="nav-badge">{{ pending_dept_reports }}</span>
+            {% endif %}
+        </a>
+        <a href="{% url 'logout' %}">{% if lang == 'uz' %}Chiqish{% else %}Logout{% endif %}</a>
+    </div>
+</div>
+
+<div class="content">
+
+    <div class="stats">
+        <div class="stat-card">
+    <div class="number">{{ total_teachers }}</div>
+    <div class="label">{% if lang == 'uz' %}Jami o'qituvchilar{% else %}Total Teachers{% endif %}</div>
+</div>
+<div class="stat-card">
+    <div class="number">{{ with_accounts }}</div>
+    <div class="label">{% if lang == 'uz' %}Hisobga ega{% else %}With Accounts{% endif %}</div>
+</div>
+<div class="stat-card">
+    <div class="number">{{ no_account }}</div>
+    <div class="label">{% if lang == 'uz' %}Hisobsiz{% else %}No Account{% endif %}</div>
+</div>
+
+        <div class="stat-card">
+    <div class="number">{{ pending_dept_reports }}</div>
+    <div class="label">{% if lang == 'uz' %}Bo'lim hisobotlari{% else %}Report of Departments{% endif %}</div>
+</div>
+    </div>
+
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="🔍 {% if lang == 'uz' %}O'qituvchini qidirish...{% else %}Search teacher...{% endif %}" onkeyup="filterTeachers()">
+    </div>
+
+    <div class="teacher-grid" id="teacherGrid">
+        {% for teacher in teachers %}
+        <div class="teacher-card {% if teacher.is_dean %}is-dean{% elif teacher.user %}has-account{% endif %}"
+             data-name="{{ teacher.full_name|lower }}"
+             onclick="location.href='{% url 'admin_teacher_edit' teacher.id %}'">
+            <div class="teacher-name">{{ teacher.full_name }}</div>
+            <div class="teacher-meta">
+                {% if teacher.user %}
+                <span>👤 {{ teacher.user.username }}</span>
+                {% else %}
+                <span style="color:#bbb;">👤 {% if lang == 'uz' %}Hisob mavjud emas{% else %}No account yet{% endif %}</span>
+                {% endif %}
+                {% if teacher.department %}
+                <span>🏛 {{ teacher.department.name }}</span>
+                {% endif %}
+            </div>
+            <div>
+                {% if teacher.is_dean %}
+                    <span class="badge badge-orange">{% if lang == 'uz' %}Dekan{% else %}Dean{% endif %}</span>
+                {% endif %}
+                {% if teacher.user %}
+                    <span class="badge badge-green">{% if lang == 'uz' %}Faol{% else %}Active{% endif %}</span>
+                {% else %}
+                    <span class="badge badge-gray">{% if lang == 'uz' %}Hisobsiz{% else %}No Account{% endif %}</span>
+                {% endif %}
+            </div>
+            {% if teacher.user %}
+            <div class="teacher-card-footer">
+                {% if teacher.latest_report %}
+                    <a class="dl-btn"
+                       href="/download-report/{{ teacher.id }}/?year={{ year }}&month={{ month }}"
+                       title="{% if lang == 'uz' %}Hisobotni yuklab olish{% else %}Download report{% endif %}"
+                       onclick="event.stopPropagation()">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        <span>{% if lang == 'uz' %}Hisobot{% else %}Report{% endif %}</span>
+                    </a>
+                    {% if teacher.latest_report.dean_approval == "pending" %}
+                        <span style="font-size:11px; color:#856404; background:#fff3cd; padding:2px 8px; border-radius:8px; font-weight:bold;">
+                            {% if lang == 'uz' %}Dekan kutilmoqda{% else %}Waiting for Dean{% endif %}
+                        </span>
+                    {% elif teacher.latest_report.dean_approval == "approved" and teacher.latest_report.admin_approval == "pending" %}
+                        <span style="font-size:11px; color:#856404; background:#ffc107; padding:2px 8px; border-radius:8px; font-weight:bold;">
+                            {% if lang == 'uz' %}Kutilmoqda{% else %}Pending{% endif %}
+                        </span>
+                    {% elif teacher.latest_report.admin_approval == "approved" %}
+                        <span class="status-tick">✓</span>
+                    {% elif teacher.latest_report.dean_approval == "rejected" or teacher.latest_report.admin_approval == "rejected" %}
+                        <span style="font-size:11px; color:#721c24; background:#fdecea; padding:2px 8px; border-radius:8px; font-weight:bold;">
+                            {% if lang == 'uz' %}Rad etildi{% else %}Rejected{% endif %}
+                        </span>
+                    {% endif %}
+                {% else %}
+                    <span class="status-empty"></span>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function filterTeachers() {
+    const query = document.getElementById("searchInput").value.toLowerCase();
+    const cards = document.querySelectorAll(".teacher-card");
+    cards.forEach(card => {
+        const name = card.getAttribute("data-name");
+        card.style.display = name.includes(query) ? "block" : "none";
+    });
+}
+</script>
+
+</body>
+</html>

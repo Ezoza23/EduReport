@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Red Days — Admin Panel</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; }
+
+        .header {
+            background: #1b497d;
+            color: white;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h2 { font-size: 18px; color: white; }
+        .header-links { display: flex; gap: 12px; }
+        .header a {
+            color: white;
+            text-decoration: none;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            border: 1px solid rgba(255,255,255,0.4);
+        }
+        .header a:hover { background: rgba(255,255,255,0.35); }
+
+        .month-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            padding: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #1b497d;
+        }
+        .month-nav a {
+            color: #1b497d;
+            text-decoration: none;
+            font-size: 24px;
+            padding: 4px 12px;
+            border-radius: 4px;
+            background: white;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+        .month-nav a:hover { background: #e8f0fb; }
+
+        .content {
+            max-width: 820px;
+            margin: 32px auto;
+            padding: 0 16px;
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 24px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .card-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1b3a6b;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        /* Calendar */
+        .calendar { width: 100%; }
+        .cal-header {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            margin-bottom: 6px;
+        }
+        .cal-header span {
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: #888;
+            padding: 6px 0;
+        }
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        .cal-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.15s;
+            position: relative;
+            color: #333;
+        }
+        .cal-day:hover { background: #eef4ff; border-color: #1b497d; }
+        .cal-day.empty { cursor: default; }
+        .cal-day.empty:hover { background: none; border-color: transparent; }
+        .cal-day.weekend { color: #aaa; }
+        .cal-day.today {
+            background: #eef4ff;
+            border-color: #1b497d;
+            color: #1b497d;
+            font-weight: bold;
+        }
+        .cal-day.red-day {
+            background: #fdecea;
+            border-color: #dc3545;
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .cal-day.red-day:hover { background: #f5c6cb; }
+        .cal-day.holiday {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+        .cal-day .dot {
+            position: absolute;
+            bottom: 3px;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #dc3545;
+        }
+
+        /* Red days list */
+        .red-day-list { list-style: none; }
+        .red-day-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f2f5;
+            gap: 8px;
+        }
+        .red-day-item:last-child { border-bottom: none; }
+        .red-day-date {
+            font-weight: bold;
+            color: #dc3545;
+            font-size: 13px;
+            min-width: 90px;
+        }
+        .red-day-reason {
+            flex: 1;
+            color: #444;
+            font-size: 12px;
+        }
+        .btn-remove {
+            background: none;
+            border: 1.5px solid #dc3545;
+            color: #dc3545;
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .btn-remove:hover { background: #dc3545; color: white; }
+
+        .empty-list {
+            text-align: center;
+            color: #aaa;
+            padding: 20px;
+            font-size: 13px;
+        }
+
+        /* Reason modal */
+        .reason-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.45);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .reason-overlay.active { display: flex; }
+        .reason-box {
+            background: white;
+            border-radius: 12px;
+            padding: 28px;
+            width: 380px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+        }
+        .reason-box h3 {
+            color: #dc3545;
+            margin-bottom: 6px;
+            font-size: 17px;
+        }
+        .reason-date {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 16px;
+        }
+        .reason-box input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid #dde3ed;
+            border-radius: 7px;
+            font-size: 14px;
+            outline: none;
+            margin-bottom: 16px;
+        }
+        .reason-box input:focus { border-color: #dc3545; }
+        .reason-actions { display: flex; gap: 10px; }
+        .reason-actions button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 7px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-add-red { background: #dc3545; color: white; }
+        .btn-add-red:hover { background: #c82333; }
+        .btn-cancel-reason { background: #f0f2f5; color: #555; }
+        .btn-cancel-reason:hover { background: #e2e5ea; }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 7px;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-error { background: #fdecea; color: #721c24; border: 1px solid #f5c6cb; }
+
+        .legend {
+            display: flex;
+            gap: 16px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #666;
+        }
+        .legend-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h2>🔴 {% if lang == 'uz' %}Qizil kunlarni boshqarish{% else %}Red Days Management{% endif %}</h2>
+    <div class="header-links">
+        <a href="/set-language/?lang={% if lang == 'en' %}uz{% else %}en{% endif %}&next={{ request.path }}"
+           style="font-weight:bold; font-size:13px;">
+            {% if lang == 'en' %}🇺🇿 UZ{% else %}🇬🇧 EN{% endif %}
+        </a>
+        <a href="{% url 'admin_panel' %}">← {% if lang == 'uz' %}O'qituvchilarga qaytish{% else %}Back to Teachers{% endif %}</a>
+        <a href="{% url 'logout' %}">{% if lang == 'uz' %}Chiqish{% else %}Logout{% endif %}</a>
+    </div>
+</div>
+
+<div class="month-nav">
+    <a href="?year={{ prev.year }}&month={{ prev.month }}">&#8249;</a>
+    {{ month_name }}
+    <a href="?year={{ next.year }}&month={{ next.month }}">&#8250;</a>
+</div>
+
+<div style="max-width:820px; margin:0 auto; padding:0 16px;">
+    {% if message %}
+    <div class="alert alert-success">✓ {{ message }}</div>
+    {% endif %}
+    {% if error %}
+    <div class="alert alert-error">✗ {{ error }}</div>
+    {% endif %}
+</div>
+
+<div class="content">
+    <!-- Calendar -->
+    <div class="card">
+        <div class="card-title">📅 {{ month_name }} — {% if lang == 'uz' %}Kunni qizil deb belgilash uchun bosing{% else %}Click a day to mark it red{% endif %}</div>
+        <div class="calendar">
+            <div class="cal-header">
+                <span>{% if lang == 'uz' %}Du{% else %}Mon{% endif %}</span>
+                <span>{% if lang == 'uz' %}Se{% else %}Tue{% endif %}</span>
+                <span>{% if lang == 'uz' %}Ch{% else %}Wed{% endif %}</span>
+                <span>{% if lang == 'uz' %}Pa{% else %}Thu{% endif %}</span>
+                <span>{% if lang == 'uz' %}Ju{% else %}Fri{% endif %}</span>
+                <span>{% if lang == 'uz' %}Sh{% else %}Sat{% endif %}</span>
+                <span>{% if lang == 'uz' %}Ya{% else %}Sun{% endif %}</span>
+            </div>
+            <div class="cal-grid">
+                <!-- Empty cells before first day -->
+                {% for _ in empty_days %}
+                <div class="cal-day empty"></div>
+                {% endfor %}
+
+                <!-- Actual days -->
+                {% for day_info in calendar_days %}
+                <div class="cal-day
+                    {% if day_info.is_red %}red-day{% endif %}
+                    {% if day_info.is_holiday %}holiday{% endif %}
+                    {% if day_info.is_today %}today{% endif %}
+                    {% if day_info.is_weekend %}weekend{% endif %}"
+                    onclick="handleDayClick('{{ day_info.date }}', {{ day_info.is_red|lower }}, '{{ day_info.reason|escapejs }}')"
+                    title="{% if day_info.is_red %}{{ day_info.reason }}{% elif day_info.is_holiday %}{{ day_info.holiday_name }}{% endif %}">
+                    {{ day_info.day }}
+                    {% if day_info.is_red %}<div class="dot"></div>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-dot" style="background:#fdecea; border:2px solid #dc3545;"></div>
+                {% if lang == 'uz' %}Maxsus qizil kun{% else %}Custom Red Day{% endif %}
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:#fff3cd; border:2px solid #ffc107;"></div>
+                {% if lang == 'uz' %}Rasmiy bayram{% else %}Public Holiday{% endif %}
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:#eef4ff; border:2px solid #1b497d;"></div>
+                {% if lang == 'uz' %}Bugun{% else %}Today{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Red days list -->
+    <div class="card">
+        <div class="card-title">🔴 {% if lang == 'uz' %}Bu oydagi qizil kunlar{% else %}Red Days this month{% endif %}</div>
+        {% if red_days %}
+        <ul class="red-day-list">
+            {% for rd in red_days %}
+            <li class="red-day-item">
+                <div class="red-day-date">{{ rd.date|date:"d M" }}</div>
+                <div class="red-day-reason">{{ rd.reason }}</div>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="red_day_id" value="{{ rd.id }}">
+                    <button type="submit" class="btn-remove">🗑</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty-list">{% if lang == 'uz' %}{{ month_name }} uchun qizil kunlar yo'q.<br>Qo'shish uchun kalendarda sanani bosing.{% else %}No red days for {{ month_name }}.<br>Click on a date in the calendar to add one.{% endif %}</div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Reason Modal -->
+<div class="reason-overlay" id="reasonModal">
+    <div class="reason-box">
+        <h3>🔴 {% if lang == 'uz' %}Qizil kun sifatida belgilash{% else %}Mark as Red Day{% endif %}</h3>
+        <div class="reason-date" id="reasonDate"></div>
+        <input type="text" id="reasonInput" placeholder="{% if lang == 'uz' %}Sabab (masalan, imtihon davri, universitet tadbiri...){% else %}Reason (e.g. Exam period, University event...){% endif %}">
+        <div class="reason-actions">
+            <button class="btn-cancel-reason" onclick="closeReason()">{% if lang == 'uz' %}Bekor qilish{% else %}Cancel{% endif %}</button>
+            <button class="btn-add-red" onclick="submitReason()">{% if lang == 'uz' %}Qizil deb belgilash{% else %}Mark Red{% endif %}</button>
+        </div>
+    </div>
+</div>
+
+<!-- Remove confirm modal -->
+<div class="reason-overlay" id="removeModal">
+    <div class="reason-box">
+        <h3>{% if lang == 'uz' %}Qizil kunni o'chirish{% else %}Remove Red Day{% endif %}</h3>
+        <div class="reason-date" id="removeDate"></div>
+        <p style="font-size:13px; color:#666; margin-bottom:16px;">
+            {% if lang == 'uz' %}Bu kun hozircha quyidagicha belgilangan:{% else %}This day is currently marked as:{% endif %} <strong id="removeReason"></strong>
+        </p>
+        <div class="reason-actions">
+            <button class="btn-cancel-reason" onclick="closeRemove()">{% if lang == 'uz' %}Saqlash{% else %}Keep it{% endif %}</button>
+            <button class="btn-add-red" onclick="submitRemove()">{% if lang == 'uz' %}O'chirish{% else %}Remove{% endif %}</button>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden forms -->
+<form id="addForm" method="POST" style="display:none;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="add">
+    <input type="hidden" name="date" id="addFormDate">
+    <input type="hidden" name="reason" id="addFormReason">
+</form>
+
+<form id="removeForm" method="POST" style="display:none;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="delete_by_date">
+    <input type="hidden" name="date" id="removeFormDate">
+</form>
+
+<script>
+let selectedDate = null;
+
+function handleDayClick(date, isRed, reason) {
+    selectedDate = date;
+    if (isRed) {
+        // Show remove modal
+        document.getElementById("removeDate").textContent = date;
+        document.getElementById("removeReason").textContent = reason;
+        document.getElementById("removeModal").classList.add("active");
+    } else {
+        // Show add modal
+        document.getElementById("reasonDate").textContent = date;
+        document.getElementById("reasonInput").value = "";
+        document.getElementById("reasonModal").classList.add("active");
+        setTimeout(() => document.getElementById("reasonInput").focus(), 100);
+    }
+}
+
+function closeReason() {
+    document.getElementById("reasonModal").classList.remove("active");
+    selectedDate = null;
+}
+
+function submitReason() {
+    const reason = document.getElementById("reasonInput").value.trim();
+    if (!reason) {
+        document.getElementById("reasonInput").style.borderColor = "#dc3545";
+        return;
+    }
+    document.getElementById("addFormDate").value = selectedDate;
+    document.getElementById("addFormReason").value = reason;
+    document.getElementById("addForm").submit();
+}
+
+function closeRemove() {
+    document.getElementById("removeModal").classList.remove("active");
+    selectedDate = null;
+}
+
+function submitRemove() {
+    document.getElementById("removeFormDate").value = selectedDate;
+    document.getElementById("removeForm").submit();
+}
+
+// Close on Enter key
+document.getElementById("reasonInput").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") submitReason();
+    if (e.key === "Escape") closeReason();
+});
+
+document.getElementById("reasonModal").addEventListener("click", function(e) {
+    if (e.target === this) closeReason();
+});
+document.getElementById("removeModal").addEventListener("click", function(e) {
+    if (e.target === this) closeRemove();
+});
+</script>
+
+</body>
+</html>

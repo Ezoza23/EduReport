@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Departments — Admin Panel</title>
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; }
+
+        .header {
+            background: #1b497d;
+            color: white;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h2 { font-size: 18px; color: white; }
+        .header-links { display: flex; gap: 12px; }
+        .header a {
+            color: white;
+            text-decoration: none;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            border: 1px solid rgba(255,255,255,0.4);
+        }
+        .header a:hover { background: rgba(255,255,255,0.35); }
+
+        .month-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            padding: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #1b497d;
+        }
+        .month-nav a {
+            color: #1b497d;
+            text-decoration: none;
+            font-size: 24px;
+            padding: 4px 12px;
+            border-radius: 4px;
+            background: white;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+        .month-nav a:hover { background: #e8f0fb; }
+
+        .content {
+            max-width: 640px;
+            margin: 0 auto 40px auto;
+            padding: 0 16px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 28px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1b3a6b;
+            margin-bottom: 16px;
+        }
+
+        .add-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .add-row input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1.5px solid #dde3ed;
+            border-radius: 7px;
+            font-size: 14px;
+            outline: none;
+        }
+        .add-row input:focus { border-color: #1b497d; }
+
+        .btn-add {
+            background: #1b497d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 7px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .btn-add:hover { background: #163d6a; }
+
+        .dept-list { list-style: none; }
+
+        .dept-item-wrapper {
+            border-bottom: 1px solid #f0f2f5;
+        }
+        .dept-item-wrapper:last-child { border-bottom: none; }
+
+        .dept-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            cursor: pointer;
+        }
+        .dept-item:hover .dept-name { color: #1b497d; }
+
+        .dept-arrow {
+            display: inline-block;
+            width: 14px;
+            transition: transform 0.15s ease;
+        }
+
+        .dept-name {
+            font-size: 15px;
+            color: #1b3a6b;
+            font-weight: 600;
+        }
+        .dept-count {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 2px;
+        }
+
+        .dept-item-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+
+        .report-badge.complete { background: #28a745; }
+
+        .dept-report-indicator {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            border-radius: 9px;
+            background: #4a7fc1;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+        .dept-report-indicator.pending { background: #ffc107; color: #333; }
+        .dept-report-indicator.approved { background: #28a745; }
+        .dept-report-indicator.rejected { background: #dc3545; }
+
+        .teacher-sublist {
+            display: none;
+            padding: 6px 0 14px 22px;
+        }
+        .teacher-sublist.open { display: block; }
+
+        .dept-report-box {
+            background: #f7f9fc;
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 12px;
+            border-left: 4px solid #4a7fc1;
+        }
+        .dept-report-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .dept-report-row.muted {
+            color: #aaa;
+            font-size: 13px;
+            justify-content: flex-start;
+        }
+        .dept-report-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1b3a6b;
+        }
+        .dept-report-actions { display: flex; gap: 8px; align-items: center; }
+        .btn-approve {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-approve:hover { background: #218838; }
+        .btn-reject {
+            background: none;
+            border: 1.5px solid #dc3545;
+            color: #dc3545;
+            padding: 5px 12px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-reject:hover { background: #dc3545; color: white; }
+        .btn-download-dept {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: #4a7fc1;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1.5px solid #4a7fc1;
+            padding: 4px 10px;
+            border-radius: 5px;
+        }
+        .btn-download-dept:hover { background: #4a7fc1; color: white; }
+        .dept-badge {
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .dept-badge.approved { background: #d4edda; color: #155724; }
+        .dept-badge.rejected { background: #fdecea; color: #721c24; }
+        .dept-admin-note {
+            font-size: 12px;
+            color: #888;
+            font-style: italic;
+            margin-top: 4px;
+        }
+
+        .sublist-summary-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #f0f2f5;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .sublist-summary {
+            font-size: 12px;
+            color: #888;
+            font-weight: bold;
+        }
+        .bulk-actions { display: flex; gap: 6px; }
+        .btn-bulk-approve {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-bulk-approve:hover { background: #218838; }
+        .btn-bulk-reject {
+            background: none;
+            border: 1.5px solid #dc3545;
+            color: #dc3545;
+            padding: 4px 10px;
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-bulk-approve-all {
+    background: #1b497d;
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.btn-bulk-approve-all:hover { background: #163d6a; }
+        .btn-bulk-reject:hover { background: #dc3545; color: white; }
+
+        .teacher-inner-list { list-style: none; }
+        .teacher-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 7px 0;
+        }
+        .teacher-row-name {
+            font-size: 14px;
+            color: #1b3a6b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .dean-tag {
+            background: #fff3cd;
+            color: #856404;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 1px 7px;
+            border-radius: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .teacher-row-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .dl-btn {
+            color: #4a7fc1;
+            display: inline-flex;
+            align-items: center;
+            text-decoration: none;
+        }
+        .dl-btn:hover { color: #1b497d; }
+        .status-tick {
+            color: #28a745;
+            font-size: 16px;
+            font-weight: bold;
+            width: 16px;
+            display: inline-block;
+            text-align: center;
+        }
+        .status-rejected {
+            color: #dc3545;
+            font-size: 16px;
+            font-weight: bold;
+            width: 16px;
+            display: inline-block;
+            text-align: center;
+        }
+        .status-empty {
+            width: 16px;
+            display: inline-block;
+        }
+        .btn-mini-approve {
+            border: 1.5px solid #28a745;
+            background: none;
+            color: #28a745;
+            border-radius: 5px;
+            padding: 2px 7px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-mini-approve:hover { background: #28a745; color: white; }
+        .btn-mini-reject {
+            border: 1.5px solid #dc3545;
+            background: none;
+            color: #dc3545;
+            border-radius: 5px;
+            padding: 2px 7px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-mini-reject:hover { background: #dc3545; color: white; }
+
+        .empty-sub {
+            color: #aaa;
+            font-size: 13px;
+            padding: 6px 0;
+        }
+
+        .btn-delete {
+    background: none;
+    border: 1.5px solid #dc3545;
+    color: #dc3545;
+    padding: 6px 10px;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+}
+.btn-delete:hover { background: #dc3545; }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 7px;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-error { background: #fdecea; color: #721c24; border: 1px solid #f5c6cb; }
+
+        .empty { text-align: center; color: #aaa; padding: 24px; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h2>🏛 {% if lang == 'uz' %}Bo'limlar{% else %}Departments{% endif %}</h2>
+    <div class="header-links">
+        <a href="/set-language/?lang={% if lang == 'en' %}uz{% else %}en{% endif %}&next={{ request.path }}"
+           style="font-weight:bold; font-size:13px;">
+            {% if lang == 'en' %}🇺🇿 UZ{% else %}🇬🇧 EN{% endif %}
+        </a>
+        <a href="{% url 'admin_panel' %}">← {% if lang == 'uz' %}O'qituvchilarga qaytish{% else %}Back to Teachers{% endif %}</a>
+        <a href="{% url 'logout' %}">{% if lang == 'uz' %}Chiqish{% else %}Logout{% endif %}</a>
+    </div>
+</div>
+
+<div class="month-nav">
+    <a href="?year={{ prev.year }}&month={{ prev.month }}">&#8249;</a>
+    {{ month_name }}
+    <a href="?year={{ next.year }}&month={{ next.month }}">&#8250;</a>
+</div>
+
+<div class="content">
+
+    {% if message %}
+    <div class="alert alert-success">✓ {{ message }}</div>
+    {% endif %}
+    {% if error %}
+    <div class="alert alert-error">✗ {{ error }}</div>
+    {% endif %}
+
+    <div class="card">
+        <div class="card-title">{% if lang == 'uz' %}Yangi bo'lim qo'shish{% else %}Add New Department{% endif %}</div>
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add">
+            <div class="add-row">
+                <input type="text" name="name" placeholder="{% if lang == 'uz' %}Bo'lim nomi...{% else %}Department name...{% endif %}" required>
+                <button type="submit" class="btn-add">+ {% if lang == 'uz' %}Qo'shish{% else %}Add{% endif %}</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="card-title">{% if lang == 'uz' %}Barcha bo'limlar{% else %}All Departments{% endif %}</div>
+        {% if dept_data %}
+        <ul class="dept-list">
+            {% for d in dept_data %}
+            <li class="dept-item-wrapper">
+                <div class="dept-item" onclick="location.href='{% url 'view_department_report' d.department.id %}?year={{ year }}&month={{ month }}'">
+                    <div>
+                        <div class="dept-name">
+                            {{ d.department.name }}
+                            {% if d.dept_report and d.dept_report.status == "submitted" %}
+                                <span class="dept-report-indicator {{ d.dept_report.approval_status }}" title="{% if lang == 'uz' %}Dekanning oylik hisoboti: {{ d.dept_report.approval_status }}{% else %}Dean's monthly report: {{ d.dept_report.approval_status }}{% endif %}">✓</span>
+                            {% endif %}
+                        </div>
+                        <div class="dept-count">{{ d.total_teachers }} {% if lang == 'uz' %}o'qituvchi{% else %}teacher{{ d.total_teachers|pluralize }}{% endif %}</div>
+                    </div>
+                    <div class="dept-item-right">
+                        <form method="POST" onsubmit="return confirm('{% if lang == 'uz' %}O'chirilsinmi{% else %}Delete{% endif %} {{ d.department.name }}?')" onclick="event.stopPropagation()">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="dept_id" value="{{ d.department.id }}">
+                            <button type="submit" class="btn-delete">🗑</button>
+                        </form>
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty">{% if lang == 'uz' %}Hali bo'limlar yo'q. Yuqorida qo'shing.{% else %}No departments yet. Add one above.{% endif %}</div>
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+function getCSRF() {
+    const name = 'csrftoken';
+    const cookies = document.cookie.split(';');
+    for (let c of cookies) {
+        c = c.trim();
+        if (c.startsWith(name + '=')) return decodeURIComponent(c.slice(name.length + 1));
+    }
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.content : '';
+}
+
+const YEAR = {{ year }};
+const MONTH = {{ month }};
+
+function toggleDept(id) {
+    const sublist = document.getElementById('teachers-' + id);
+    const arrow = document.getElementById('arrow-' + id);
+    sublist.classList.toggle('open');
+    arrow.textContent = sublist.classList.contains('open') ? '▾' : '▸';
+}
+
+function reviewDeptReport(reportId, decision) {
+    let note = "";
+    if (decision === "reject") {
+        note = prompt("Reason for rejection (optional):") || "";
+    } else {
+        if (!confirm("Approve this department's monthly report?")) return;
+    }
+
+    fetch(`/review-department-report/${reportId}/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": getCSRF() },
+        body: `decision=${decision}&note=${encodeURIComponent(note)}`
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === "ok") {
+            location.reload();
+        } else {
+            alert(data.message || "Action failed");
+        }
+    });
+}
+
+function reviewTeacherReport(reportId, decision) {
+    let note = "";
+    if (decision === "reject") {
+        note = prompt("Reason for rejection (optional):") || "";
+    } else {
+        if (!confirm("Approve this teacher's report?")) return;
+    }
+
+    fetch(`/review-teacher-report/${reportId}/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": getCSRF() },
+        body: `decision=${decision}&note=${encodeURIComponent(note)}`
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === "ok") {
+            location.reload();
+        } else {
+            alert(data.message || "Action failed");
+        }
+    });
+}
+
+function bulkApproveSubmitted(deptId) {
+    if (!confirm("Approve all currently submitted reports in this department?")) return;
+    sendBulkReview(deptId, "approve", "submitted");
+}
+
+function bulkApproveAll(deptId, total, submitted) {
+    if (submitted < total) {
+        alert(`Not all teachers have submitted yet (${submitted} of ${total}). Use "Approve Submitted" for now, or wait until everyone has reported.`);
+        return;
+    }
+    if (!confirm("All teachers have submitted. Approve everyone now?")) return;
+    sendBulkReview(deptId, "approve", "all");
+}
+
+function bulkRejectAll(deptId) {
+    if (!confirm("Reject ALL submitted reports in this department for this month?")) return;
+    sendBulkReview(deptId, "reject", "submitted");
+}
+
+function sendBulkReview(deptId, decision, scope) {
+    fetch(`/bulk-review-teacher-reports/${deptId}/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": getCSRF() },
+        body: `decision=${decision}&scope=${scope}&year=${YEAR}&month=${MONTH}`
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === "ok") {
+            location.reload();
+        } else {
+            alert(data.message || "Action failed");
+        }
+    });
+}
+</script>
+
+</body>
+</html>

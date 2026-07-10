@@ -1,3 +1,4 @@
+{% load timetable_tags %}
 <!DOCTYPE html>
 <html>
 <head>
@@ -15,17 +16,19 @@
             justify-content: space-between;
             align-items: center;
         }
-        .header h2 { font-size: 18px; }
-        .header-links { display: flex; gap: 12px; }
-        .header a {
-            color: white;
+        .header h2 { font-size: 18px; color: white; }
+        .header-links { display: flex; gap: 12px; align-items: center; }
+        .header-links a {
+            color: white !important;
             text-decoration: none;
-            background: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.25);
             padding: 8px 16px;
             border-radius: 4px;
             font-size: 14px;
+            border: 1px solid rgba(255,255,255,0.5);
+            display: inline-block;
         }
-        .header a:hover { background: rgba(255,255,255,0.3); }
+        .header-links a:hover { background: rgba(255,255,255,0.4); }
 
         .month-nav {
             display: flex;
@@ -55,28 +58,124 @@
             border-bottom: 1px solid #dde3ed;
             box-shadow: 0 2px 4px rgba(0,0,0,0.04);
         }
-        .submit-bar button {
-            background: #1b497d;
-            color: white;
-            border: none;
-            padding: 10px 36px;
-            border-radius: 6px;
-            font-size: 15px;
-            cursor: pointer;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-        }
-        .submit-bar button:hover { background: #163d6a; }
         .submitted-badge {
             background: #28a745;
             color: white;
-            padding: 10px 32px;
+            padding: 8px 20px;
             border-radius: 6px;
-            font-size: 15px;
+            font-size: 14px;
             display: inline-block;
             font-weight: bold;
         }
-        .deadline-info { font-size: 13px; color: #999; margin-top: 6px; }
+        .submitted-badge.pending { background: #ffc107; color: #333; }
+.submitted-badge.approved { background: #28a745; color: white; }
+.submitted-badge.rejected { background: #dc3545; color: white; }
+.admin-note-text {
+    font-size: 13px;
+    color: #888;
+    font-style: italic;
+}
+        .approval-track { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.track-label { color: #888; font-weight: bold; }
+.status-pill { padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+.status-pill.pending { background: #ffc107; color: #333; }
+.status-pill.approved { background: #28a745; color: white; }
+.status-pill.rejected { background: #dc3545; color: white; }
+.status-pill.waiting { background: #e9ecef; color: #888; }
+.admin-note-text { font-size: 12px; color: #888; font-style: italic; }
+        /* Exam attendance panel */
+        .exam-panel {
+            background: white;
+            margin: 18px 28px 0 28px;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+            padding: 16px 20px;
+        }
+        .exam-panel-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: #bbb;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+        .exam-counters {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+        .exam-counter {
+            flex: 1;
+            min-width: 170px;
+            background: #f7f9fc;
+            border-radius: 8px;
+            padding: 12px 16px;
+            border-left: 4px solid #4a7fc1;
+        }
+        .exam-unit-choice { display: flex; gap: 12px; margin-bottom: 8px; }
+.exam-unit-choice label {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 13px; color: #555; cursor: pointer; font-weight: normal;
+}
+.exam-unit-choice input[type="radio"] { cursor: pointer; }
+        .exam-counter-label {
+            font-size: 12px;
+            color: #777;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+        .exam-counter-value-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .exam-counter-value {
+            font-size: 22px;
+            font-weight: bold;
+            color: #1b3a6b;
+        }
+        .exam-counter-edit {
+            border: 1.5px solid #4a7fc1;
+            background: none;
+            color: #4a7fc1;
+            border-radius: 5px;
+            padding: 2px 9px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .exam-counter-edit:hover { background: #4a7fc1; color: white; }
+        .exam-counter-input {
+            width: 75px;
+            padding: 5px 8px;
+            border: 1.5px solid #4a7fc1;
+            border-radius: 5px;
+            font-size: 16px;
+            outline: none;
+        }
+        .exam-counter-save {
+            border: 1.5px solid #28a745;
+            background: none;
+            color: #28a745;
+            border-radius: 5px;
+            padding: 3px 9px;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.15s;
+        }
+        .exam-counter-save:hover { background: #28a745; color: white; }
+        .exam-counter-cancel {
+            border: 1.5px solid #dc3545;
+            background: none;
+            color: #dc3545;
+            border-radius: 5px;
+            padding: 3px 9px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .exam-counter-cancel:hover { background: #dc3545; color: white; }
 
         .content { padding: 20px 28px; }
         .week-block { margin-bottom: 36px; }
@@ -84,11 +183,26 @@
             font-size: 12px;
             font-weight: bold;
             color: #bbb;
-            margin-bottom: 10px;
+            margin-bottom: 0;
             text-transform: uppercase;
             letter-spacing: 1.5px;
         }
 
+        .type-badge {
+            font-size: 9px;
+            font-weight: bold;
+            padding: 1px 5px;
+            border-radius: 3px;
+            display: inline-block;
+            margin-top: 2px;
+        }
+        .type-lecture { background: #cce5ff; color: #004085; }
+        .type-seminar { background: #d4edda; color: #155724; }
+        .type-lab { background: #fff3cd; color: #856404; }
+        .type-exam { background: #f8d7da; color: #721c24; }
+        .type-final-exam { background: #f8d7da; color: #721c24; }
+.type-midterm-exam { background: #fce8d5; color: #7d3c0a; }
+.type-retake-exam { background: #e8d5fc; color: #5b2c8d; }
         table {
             border-collapse: collapse;
             width: 100%;
@@ -123,6 +237,27 @@
             width: 80px;
             padding: 6px;
             border-right: 2px solid #e0e7f0;
+        }
+        td.day-cell.holiday {
+            background: #fff0f0;
+            border-right-color: #ffcccc;
+        }
+        td.day-cell.holiday .day-name {
+            color: #dc3545;
+        }
+        td.day-cell.holiday .day-date {
+            color: #dc3545;
+        }
+        .holiday-label {
+            font-size: 9px;
+            color: #dc3545;
+            font-weight: bold;
+            margin-top: 2px;
+            line-height: 1.2;
+        }
+        td.holiday-slot {
+            background: #fff5f5 !important;
+            border-color: #ffcccc !important;
         }
         .day-name { font-weight: bold; font-size: 13px; color: #1b497d; }
         .day-date { font-size: 11px; color: #bbb; margin-top: 3px; }
@@ -168,6 +303,7 @@
         .status-badge.covered { background: #d4edda; color: #155724; }
         .status-badge.replaced { background: #ffeaa7; color: #856404; }
         .status-badge.pending { background: #e9ecef; color: #888; }
+        .status-badge.missed { background: #fdecea; color: #721c24; }
 
         .card-btns { display: flex; gap: 4px; }
 
@@ -183,7 +319,7 @@
             transition: all 0.15s;
         }
         .btn-covered:hover { background: #28a745; color: white; }
-        .cell-card.covered .btn-covered { background: #28a745; color: white; }
+        .btn-covered.active { background: #28a745; color: white; }
 
         .btn-edit {
             border: 1.5px solid #4a7fc1;
@@ -253,21 +389,93 @@
             font-weight: bold;
             transition: background 0.15s;
         }
+        .confirm-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.45);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+}
+.confirm-overlay.active { display: flex; }
+.confirm-box {
+    background: white;
+    border-radius: 12px;
+    padding: 28px 32px;
+    min-width: 320px;
+    max-width: 420px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+    text-align: center;
+}
+.confirm-icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+}
+.confirm-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1b3a6b;
+    margin-bottom: 8px;
+}
+.confirm-message {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 24px;
+    line-height: 1.5;
+}
+.confirm-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+.confirm-btn-ok {
+    background: #1b497d;
+    color: white;
+    border: none;
+    padding: 10px 28px;
+    border-radius: 7px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    min-width: 90px;
+}
+.confirm-btn-ok:hover { background: #163d6a; }
+.confirm-btn-ok.danger { background: #dc3545; }
+.confirm-btn-ok.danger:hover { background: #c82333; }
+.confirm-btn-ok.success { background: #28a745; }
+.confirm-btn-ok.success:hover { background: #218838; }
+.confirm-btn-cancel {
+    background: #f0f2f5;
+    color: #555;
+    border: none;
+    padding: 10px 28px;
+    border-radius: 7px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    min-width: 90px;
+}
+.confirm-btn-cancel:hover { background: #e2e5ea; }
         .btn-save { background: #1b497d; color: white; }
         .btn-save:hover { background: #163d6a; }
-        .btn-cancel { background: #f0f2f5; color: #666; }
-        .btn-cancel:hover { background: #e2e5ea; }
+        .btn-cancel-modal { background: #f0f2f5; color: #666; }
+        .btn-cancel-modal:hover { background: #e2e5ea; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <h2>{{ teacher.full_name }} — Timetable</h2>
+    <h2>{{ teacher.full_name }} — {% if lang == 'uz' %}Dars jadvali{% else %}Timetable{% endif %}</h2>
     <div class="header-links">
+        <a href="/set-language/?lang={% if lang == 'en' %}uz{% else %}en{% endif %}&next={{ request.path }}">
+            {% if lang == 'en' %}🇺🇿 UZ{% else %}🇬🇧 EN{% endif %}
+        </a>
         {% if teacher.is_dean %}
-        <a href="{% url 'dean_dashboard' %}">Dean Dashboard</a>
+        <a href="{% url 'dean_dashboard' %}">{% if lang == 'uz' %}Dekan paneli{% else %}Dean Dashboard{% endif %}</a>
         {% endif %}
-        <a href="{% url 'logout' %}">Logout</a>
+        <a href="{% url 'logout' %}">{% if lang == 'uz' %}Chiqish{% else %}Logout{% endif %}</a>
     </div>
 </div>
 
@@ -278,11 +486,113 @@
 </div>
 
 <div class="submit-bar">
-    {% if already_submitted %}
-        <div class="submitted-badge">✓ Report Submitted</div>
-    {% else %}
-        <button onclick="submitReport()">📤 Send Report</button>
+    <div style="display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap;">
+        {% if already_submitted %}
+            <div class="approval-track">
+                <span class="track-label">{% if lang == 'uz' %}Dekan{% else %}Dean{% endif %}:</span>
+                {% if report.dean_approval == "pending" %}<span class="status-pill pending">⏳ Pending</span>
+                {% elif report.dean_approval == "approved" %}<span class="status-pill approved">✓ Approved</span>
+                {% elif report.dean_approval == "rejected" %}<span class="status-pill rejected">✗ Rejected</span>{% endif %}
+            </div>
+            <div class="approval-track">
+                <span class="track-label">{% if lang == 'uz' %}Admin{% else %}Admin{% endif %}:</span>
+                {% if report.admin_approval == "waiting_dean" %}<span class="status-pill waiting">{% if lang == 'uz' %}Dekanni kutmoqda{% else %}Waiting for Dean{% endif %}</span>
+                {% elif report.admin_approval == "pending" %}<span class="status-pill pending">⏳ Pending</span>
+                {% elif report.admin_approval == "approved" %}<span class="status-pill approved">✓ Approved</span>
+                {% elif report.admin_approval == "rejected" %}<span class="status-pill rejected">✗ Rejected</span>{% endif %}
+            </div>
+
+            {% if report.dean_approval == "pending" and report.admin_approval == "waiting_dean" %}
+                <button onclick="cancelReport()" style="background:none; border:2px solid #dc3545; color:#dc3545; padding:9px 14px; border-radius:6px; font-size:15px; font-weight:bold; cursor:pointer;">✕</button>
+            {% endif %}
+
+            {% if is_rejected %}
+    {% if report.dean_approval == "rejected" %}
+    {% if report.dean_rejection_reason %}
+        <span class="admin-note-text">
+            {% if lang == 'uz' %}Sabab{% else %}Reason{% endif %}: {{ report.dean_rejection_reason }}
+        </span>
     {% endif %}
+{% elif report.admin_approval == "rejected" %}
+    {% if report.admin_rejection_reason %}
+        <span class="admin-note-text">
+            {% if lang == 'uz' %}Sabab{% else %}Reason{% endif %}: {{ report.admin_rejection_reason }}
+        </span>
+    {% endif %}
+{% endif %}
+
+    {% if not edit_mode %}
+        <a href="?edit=1&year={{ year }}&month={{ month }}"
+           id="editReportBtn"
+           style="background:#1b497d; color:white; padding:9px 18px; border-radius:6px; font-size:14px; font-weight:bold; text-decoration:none; display:inline-block;">
+            {% if lang == 'uz' %}Hisobotni tahrirlash{% else %}Edit Report{% endif %}
+        </a>
+    {% else %}
+        <a href="{% url 'preview_report' %}?year={{ year }}&month={{ month }}"
+           style="display:inline-flex; align-items:center; gap:8px; background:#28a745; color:white; padding:10px 24px; border-radius:6px; font-size:15px; font-weight:bold; text-decoration:none;">
+            📤 {% if lang == 'uz' %}Hisobot yuborish{% else %}Send Report{% endif %}
+        </a>
+    {% endif %}
+{% endif %}
+        {% else %}
+            <button onclick="markWholeMonth()"
+        style="background:white; color:#1b497d; border:2px solid #1b497d; padding:10px 20px; border-radius:6px; font-size:14px; font-weight:bold; cursor:pointer;">
+        ✓ {% if lang == 'uz' %}Butun oy{% else %}Whole Month{% endif %}
+    </button>
+            <a href="{% url 'preview_report' %}?year={{ year }}&month={{ month }}"
+   style="display:inline-flex; align-items:center; gap:8px; background:#1b497d; color:white; border:none; padding:10px 28px; border-radius:6px; font-size:15px; font-weight:bold; text-decoration:none; cursor:pointer;">
+    📤 {% if lang == 'uz' %}Hisobot yuborish{% else %}Send Report{% endif %}
+</a>
+
+
+        {% endif %}
+    </div>
+</div>
+
+<div class="exam-panel">
+    <div class="exam-panel-title">{% if lang == 'uz' %}Imtihon davomati{% else %}Exam Attendance{% endif %}</div>
+    <div class="exam-counters">
+
+        <div class="exam-counter">
+            <div class="exam-counter-label">{% if lang == 'uz' %}Yakuniy imtihon{% else %}Final Exam{% endif %}</div>
+            <div class="exam-counter-value-wrap" id="wrap-final_exam_count">
+                <span class="exam-counter-value" id="value-final_exam_count">{% if exam_attendance %}{{ exam_attendance.final_exam_count }}{% else %}0{% endif %}</span>
+                <span class="exam-counter-unit" id="unit-final_exam_count" style="font-size:13px; color:#888; margin-left:4px;">
+                    {% if exam_attendance %}{% if lang == 'uz' %}{% if exam_attendance.final_exam_unit == 'groups' %}guruh{% else %}talaba{% endif %}{% else %}{{ exam_attendance.final_exam_unit }}{% endif %}{% else %}{% if lang == 'uz' %}talaba{% else %}students{% endif %}{% endif %}
+                </span>
+                {% if can_edit %}
+                <button class="exam-counter-edit" onclick="openExamEdit('final_exam_count', '{% if exam_attendance %}{{ exam_attendance.final_exam_unit }}{% else %}students{% endif %}')">✎</button>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="exam-counter">
+            <div class="exam-counter-label">{% if lang == 'uz' %}Oraliq nazorat{% else %}Midterm Exam{% endif %}</div>
+            <div class="exam-counter-value-wrap" id="wrap-midterm_exam_count">
+                <span class="exam-counter-value" id="value-midterm_exam_count">{% if exam_attendance %}{{ exam_attendance.midterm_exam_count }}{% else %}0{% endif %}</span>
+                <span class="exam-counter-unit" id="unit-midterm_exam_count" style="font-size:13px; color:#888; margin-left:4px;">
+                    {% if exam_attendance %}{% if lang == 'uz' %}{% if exam_attendance.midterm_exam_unit == 'groups' %}guruh{% else %}talaba{% endif %}{% else %}{{ exam_attendance.midterm_exam_unit }}{% endif %}{% else %}{% if lang == 'uz' %}talaba{% else %}students{% endif %}{% endif %}
+                </span>
+                {% if can_edit %}
+                <button class="exam-counter-edit" onclick="openExamEdit('midterm_exam_count', '{% if exam_attendance %}{{ exam_attendance.midterm_exam_unit }}{% else %}students{% endif %}')">✎</button>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="exam-counter">
+            <div class="exam-counter-label">{% if lang == 'uz' %}Qayta topshirish{% else %}Retake Exam{% endif %}</div>
+            <div class="exam-counter-value-wrap" id="wrap-retake_exam_count">
+                <span class="exam-counter-value" id="value-retake_exam_count">{% if exam_attendance %}{{ exam_attendance.retake_exam_count }}{% else %}0{% endif %}</span>
+                <span class="exam-counter-unit" id="unit-retake_exam_count" style="font-size:13px; color:#888; margin-left:4px;">
+                    {% if exam_attendance %}{% if lang == 'uz' %}{% if exam_attendance.retake_exam_unit == 'groups' %}guruh{% else %}talaba{% endif %}{% else %}{{ exam_attendance.retake_exam_unit }}{% endif %}{% else %}{% if lang == 'uz' %}talaba{% else %}students{% endif %}{% endif %}
+                </span>
+                {% if can_edit %}
+                <button class="exam-counter-edit" onclick="openExamEdit('retake_exam_count', '{% if exam_attendance %}{{ exam_attendance.retake_exam_unit }}{% else %}students{% endif %}')">✎</button>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
 </div>
 
 <div class="content">
@@ -291,11 +601,27 @@
     {% else %}
         {% for week in weeks_data %}
         <div class="week-block">
-            <div class="week-title">Week {{ forloop.counter }}</div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+                <div class="week-title">{% if lang == 'uz' %}Hafta{% else %}Week{% endif %} {{ forloop.counter }}</div>
+                {% if not already_submitted %}
+<div style="display:flex; gap:6px;">
+    <button onclick="markWholeWeek(this, true)" data-week="{{ forloop.counter0 }}"
+        style="background:#1b497d; color:white; border:none; padding:5px 14px; border-radius:5px; font-size:12px; cursor:pointer; font-weight:bold;">
+        ✓ {% if lang == 'uz' %}Butun hafta{% else %}Whole Week{% endif %}
+    </button>
+
+    <button onclick="markWholeWeek(this, false)" data-week="{{ forloop.counter0 }}"
+        style="background:none; border:1.5px solid #dc3545; color:#dc3545; padding:5px 10px; border-radius:5px; font-size:12px; cursor:pointer; font-weight:bold;"
+        title="{% if lang == 'uz' %}Haftani bekor qilish{% else %}Unmark whole week{% endif %}">
+        ✕
+    </button>
+</div>
+{% endif %}
+            </div>
             <table>
                 <thead>
                     <tr>
-                        <th style="width:80px;">Day</th>
+                        <th style="width:80px;">{% if lang == 'uz' %}Kun{% else %}Day{% endif %}</th>
                         {% for p in period_list %}
                         <th>
                             <div class="period-number">{{ p.number }}</div>
@@ -308,40 +634,102 @@
                 <tbody>
                     {% for row in week %}
                     <tr>
-                        <td class="day-cell">
-                            <div class="day-name">{{ row.day_name|slice:":3" }}</div>
+                        {% with holiday_name=holidays|get_item:row.date %}
+                        <td class="day-cell {% if holiday_name %}holiday{% endif %}">
+                            <div class="day-name">{{ row.day_short }}</div>
                             <div class="day-date">{{ row.date|date:"d M" }}</div>
+                            {% if holiday_name %}
+                            <div class="holiday-label">🔴 {{ holiday_name }}</div>
+                            {% endif %}
+                            {% if can_edit and not holiday_name %}
+                            {% endif %}
                         </td>
+                        {% endwith %}
                         {% for cell in row.cells %}
-                        <td>
-                            {% if cell.card %}
-                            <div class="cell-card {% if cell.record.is_replaced %}replaced{% elif cell.record.is_covered %}covered{% endif %}"
-                                 id="cell-{{ cell.card.id }}-{{ cell.date }}">
-                                <div class="card-subject">{{ cell.card.subject }}</div>
-                                <div class="card-class">{{ cell.card.class_names }}</div>
-                                <div class="card-room">{{ cell.card.classroom }}</div>
+                        {% with holiday_name=holidays|get_item:row.date %}
+                        <td {% if holiday_name %}class="holiday-slot"{% endif %}>
+                            {% if cell.lesson and not holiday_name %}
+                            <div class="cell-card {% if cell.record.is_replaced %}replaced{% elif cell.record.is_covered %}covered{% endif %} {% if cell.is_replacement %}replacement-slot{% endif %}"
+                                 id="cell-{{ cell.lesson.id }}-{{ cell.date }}">
+
+                                <div class="card-subject">{{ cell.lesson.subject }}</div>
+
+                                    {% if cell.lesson.lesson_type == "lecture" %}
+    <span class="type-badge type-lecture">{% if lang == 'uz' %}Ma'ruza{% else %}Lecture{% endif %}</span>
+{% elif cell.lesson.lesson_type == "lab" %}
+    <span class="type-badge type-lab">{% if lang == 'uz' %}Laboratoriya{% else %}Lab{% endif %}</span>
+{% elif cell.lesson.lesson_type == "final_exam" %}
+    <span class="type-badge type-final-exam">{% if lang == 'uz' %}Yakuniy imtihon{% else %}Final Exam{% endif %}</span>
+{% elif cell.lesson.lesson_type == "midterm_exam" %}
+    <span class="type-badge type-midterm-exam">{% if lang == 'uz' %}Oraliq nazorat{% else %}Midterm Exam{% endif %}</span>
+{% elif cell.lesson.lesson_type == "retake_exam" %}
+    <span class="type-badge type-retake-exam">{% if lang == 'uz' %}Qayta topshirish{% else %}Retake Exam{% endif %}</span>
+{% elif cell.lesson.lesson_type == "exam" %}
+    <span class="type-badge type-exam">{% if lang == 'uz' %}Imtihon{% else %}Exam{% endif %}</span>
+{% else %}
+    <span class="type-badge type-seminar">{% if lang == 'uz' %}Seminar{% else %}Seminar{% endif %}</span>
+{% endif %}
+
+                                {% if cell.is_replacement %}
+                                <div class="replacement-label">
+                                    ↔ {% if lang == 'uz' %}Ko'chirilgan dars{% else %}Rescheduled here{% endif %}
+                                </div>
+                                {% endif %}
+
+                                <div class="card-class">{{ cell.lesson.class_names }}</div>
+                                {% if cell.lesson.classroom %}<div class="card-room">{{ cell.lesson.classroom }}</div>{% endif %}
                                 <div class="card-status">
                                     {% if cell.record.is_replaced %}
-                                        <span class="status-badge replaced">↔ Rescheduled</span>
+                                        <span class="status-badge replaced">{% if lang == 'uz' %}Ko'chirildi{% else %}↔ Rescheduled{% endif %}</span>
                                     {% elif cell.record.is_covered %}
-                                        <span class="status-badge covered">✓ Covered</span>
+                                        <span class="status-badge covered">{% if lang == 'uz' %}O'tildi{% else %}✓ Covered{% endif %}</span>
+                                    {% elif already_submitted %}
+                                        <span class="status-badge missed">{% if lang == 'uz' %}O'tilmadi{% else %}Missed{% endif %}</span>
                                     {% else %}
-                                        <span class="status-badge pending">Pending</span>
+                                        <span class="status-badge pending">{% if lang == 'uz' %}Kutilmoqda{% else %}Pending{% endif %}</span>
                                     {% endif %}
-                                    {% if not already_submitted %}
+
+                                    {% if can_edit %}
                                     <div class="card-btns">
-                                        <button class="btn-covered"
-                                            onclick="markCovered('{{ cell.card.id }}', '{{ cell.date }}')">✓</button>
+                                        <button class="btn-covered {% if cell.record.is_covered %}active{% endif %}"
+                                                onclick="markCovered('{{ cell.lesson.id }}', '{{ cell.date }}')">✓</button>
+
                                         <button class="btn-edit"
-                                            onclick="openEdit('{{ cell.card.id }}', '{{ cell.date }}', '{{ cell.card.subject }}')">✎ Edit</button>
+                                            onclick="openEdit(
+                                                '{% if cell.is_replacement and cell.original_lesson_id %}{{ cell.original_lesson_id }}{% else %}{{ cell.lesson.id }}{% endif %}',
+                                                '{% if cell.is_replacement and cell.original_lesson_date %}{{ cell.original_lesson_date }}{% else %}{{ cell.date }}{% endif %}',
+                                                '{{ cell.lesson.subject }}',
+                                                '{{ cell.lesson.period }}'
+                                            )">✎</button>
+
+                                        {% if cell.is_replacement or cell.is_custom %}
+                                        <button onclick="deleteLesson('{{ cell.lesson.id }}', '{{ cell.date }}')"
+                                            style="border:1.5px solid #dc3545; background:none; color:#dc3545; border-radius:5px; padding:3px 6px; font-size:12px; cursor:pointer;">
+                                            ✕
+                                        </button>
+                                        {% endif %}
                                     </div>
                                     {% endif %}
                                 </div>
                             </div>
+
+                            {% elif holiday_name %}
+                            <div class="cell-empty" style="background:#fff5f5;"></div>
+
                             {% else %}
-                            <div class="cell-empty"></div>
+                            <div class="cell-empty" id="empty-{{ cell.date }}-{{ cell.period }}">
+                                {% if can_edit %}
+                                <button onclick="openAddLesson('{{ cell.date }}', '{{ cell.period }}')"
+                                    style="width:100%; height:100%; background:none; border:none; cursor:pointer; color:#ccc; font-size:18px; transition:all 0.15s;"
+                                    onmouseover="this.style.background='#f0f4ff'; this.style.color='#1b497d';"
+                                    onmouseout="this.style.background='none'; this.style.color='#ccc';">
+                                    +
+                                </button>
+                                {% endif %}
+                            </div>
                             {% endif %}
                         </td>
+                        {% endwith %}
                         {% endfor %}
                     </tr>
                     {% endfor %}
@@ -355,144 +743,539 @@
 <!-- Reschedule Modal -->
 <div class="modal-overlay" id="editModal">
     <div class="modal">
-        <h3>Reschedule Lesson</h3>
+        <h3>{% if lang == 'uz' %}Darsni ko'chirish{% else %}Reschedule Lesson{% endif %}</h3>
         <div class="modal-subject" id="modal-subject"></div>
 
-        <label>New Date</label>
+        <label>{% if lang == 'uz' %}Yangi sana{% else %}New Date{% endif %}</label>
         <input type="date" id="replacement-date">
 
-        <label>New Period</label>
+        <label>{% if lang == 'uz' %}Yangi dars{% else %}New Period{% endif %}</label>
         <select id="replacement-period">
             {% for p in period_list %}
-            <option value="{{ p.number }}">Period {{ p.number }} — {{ p.start }} – {{ p.end }}</option>
+            <option value="{{ p.number }}">{% if lang == 'uz' %}Dars{% else %}Period{% endif %} {{ p.number }} — {{ p.start }} – {{ p.end }}</option>
             {% endfor %}
         </select>
 
-        <label>Reason</label>
-        <textarea id="replacement-note" placeholder="Reason for rescheduling..."></textarea>
+        <label>{% if lang == 'uz' %}Sabab{% else %}Reason{% endif %}</label>
+        <textarea id="replacement-note" placeholder="{% if lang == 'uz' %}Ko'chirish sababi...{% else %}Reason for rescheduling...{% endif %}"></textarea>
 
         <div class="modal-actions">
-            <button class="btn-cancel" onclick="closeEdit()">Cancel</button>
-            <button class="btn-save" onclick="saveEdit()">Save</button>
+            <button class="btn-cancel-modal" onclick="closeEdit()">{% if lang == 'uz' %}Bekor qilish{% else %}Cancel{% endif %}</button>
+            <button class="btn-save" onclick="saveEdit()">{% if lang == 'uz' %}Saqlash{% else %}Save{% endif %}</button>
         </div>
     </div>
 </div>
+<!-- Add Lesson Modal -->
+<div class="modal-overlay" id="addLessonModal">
+    <div class="modal">
+        <h3>{% if lang == 'uz' %}Dars qo'shish{% else %}Add Lesson{% endif %}</h3>
+        <div class="modal-subject" id="add-lesson-slot"></div>
 
+        <label>{% if lang == 'uz' %}Fan nomi{% else %}Subject Name{% endif %} *</label>
+        <input type="text" id="add-subject" placeholder="{% if lang == 'uz' %}Fan nomini kiriting...{% else %}Enter subject name...{% endif %}">
+
+        <label>{% if lang == 'uz' %}Xona{% else %}Classroom{% endif %}</label>
+        <input type="text" id="add-classroom" placeholder="{% if lang == 'uz' %}Xona nomi (ixtiyoriy){% else %}Classroom name (optional){% endif %}">
+
+
+        <label>{% if lang == 'uz' %}Guruhlar{% else %}Groups / Class{% endif %}</label>
+        <input type="text" id="add-class-names" placeholder="{% if lang == 'uz' %}Guruh nomi (ixtiyoriy){% else %}Group names (optional){% endif %}">
+
+        <label>{% if lang == 'uz' %}Sabab (ixtiyoriy){% else %}Reason (optional){% endif %}</label>
+        <textarea id="add-reason" style="height:60px; resize:none;" placeholder="{% if lang == 'uz' %}Bu darsni qo'shish sababi...{% else %}Reason for adding this lesson...{% endif %}"></textarea>
+
+
+        <div class="modal-actions">
+            <button class="btn-cancel-modal" onclick="closeAddLesson()">{% if lang == 'uz' %}Bekor qilish{% else %}Cancel{% endif %}</button>
+            <button class="btn-save" onclick="saveAddLesson()">{% if lang == 'uz' %}Qo'shish{% else %}Add{% endif %}</button>
+        </div>
+    </div>
+</div>
 <script>
 const YEAR = {{ year }};
 const MONTH = {{ month }};
+const LANG = "{{ lang }}";
 
 function getCSRF() {
-    // Try cookie first
     const name = 'csrftoken';
     const cookies = document.cookie.split(';');
     for (let c of cookies) {
         c = c.trim();
-        if (c.startsWith(name + '=')) {
-            return decodeURIComponent(c.slice(name.length + 1));
-        }
+        if (c.startsWith(name + '=')) return decodeURIComponent(c.slice(name.length + 1));
     }
-    // Fallback to meta tag
     const meta = document.querySelector('meta[name="csrf-token"]');
     return meta ? meta.content : '';
 }
 
-let editCardId = null;
+const T = {
+    covered: LANG === 'uz' ? "O'tildi" : "✓ Covered",
+    pending: LANG === 'uz' ? "Kutilmoqda" : "Pending",
+    rescheduled: LANG === 'uz' ? "Ko'chirildi" : "↔ Rescheduled",
+    confirm_submit: LANG === 'uz' ? "Oylik hisobotingizni yuborishga ishonchingiz komilmi?" : "Are you sure you want to submit your monthly report?",
+    confirm_cancel: LANG === 'uz' ? "Yuborishni bekor qilishga ishonchingiz komilmi?" : "Are you sure you want to cancel your submission?",
+    confirm_day_mark: LANG === 'uz' ? "Bu kundagi barcha darslarni o'tildi deb belgilash?" : "Mark all lessons on this day as covered?",
+    confirm_day_unmark: LANG === 'uz' ? "Bu kundagi barcha darslarni bekor qilish?" : "Unmark all lessons on this day?",
+    confirm_week_mark: LANG === 'uz' ? "Bu haftadagi barcha darslarni o'tildi deb belgilash?" : "Mark all lessons this week as covered?",
+    confirm_week_unmark: LANG === 'uz' ? "Bu haftadagi barcha darslarni bekor qilish?" : "Unmark all lessons this week?",
+};
+
+let editLessonId = null;
 let editDate = null;
 
-function markCovered(cardId, date) {
-    const cell = document.getElementById(`cell-${cardId}-${date}`);
-    const isCovered = cell.classList.contains("covered");
+function markCovered(lessonId, date) {
+    const cell = document.getElementById(`cell-${lessonId}-${date}`);
+    const btn = cell.querySelector(".btn-covered");
+    const isCovered = btn.classList.contains("active");
 
     fetch("/mark-lesson/", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "X-CSRFToken": getCSRF(),
-        },
-        body: `card_id=${cardId}&date=${date}&is_covered=${isCovered ? 'false' : 'true'}`
+        headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": getCSRF() },
+        body: `lesson_id=${lessonId}&date=${date}&is_covered=${isCovered ? 'false' : 'true'}`
     })
     .then(r => r.json())
     .then(data => {
         const badge = cell.querySelector(".status-badge");
-        const btn = cell.querySelector(".btn-covered");
-        cell.classList.remove("covered", "replaced");
-
-        if (data.is_covered) {
+        if (data.is_replaced) {
+            badge.className = "status-badge replaced";
+            badge.textContent = T.rescheduled;
+        } else if (data.is_covered) {
+            cell.classList.remove("replaced");
             cell.classList.add("covered");
             badge.className = "status-badge covered";
-            badge.textContent = "✓ Covered";
-            btn.style.background = "#28a745";
-            btn.style.color = "white";
+            badge.textContent = T.covered;
+            btn.classList.add("active");
         } else {
+            cell.classList.remove("covered", "replaced");
             badge.className = "status-badge pending";
-            badge.textContent = "Pending";
-            btn.style.background = "";
-            btn.style.color = "#28a745";
+            badge.textContent = T.pending;
+            btn.classList.remove("active");
         }
     });
 }
 
-function openEdit(cardId, date, subject) {
-    editCardId = cardId;
+function openEdit(lessonId, date, subject, currentPeriod) {
+    editLessonId = lessonId;
     editDate = date;
     document.getElementById("modal-subject").textContent = subject;
     document.getElementById("replacement-date").value = date;
     document.getElementById("replacement-note").value = "";
+    // Set period selector to current period if provided
+    if (currentPeriod) {
+        const sel = document.getElementById("replacement-period");
+        if (sel) sel.value = currentPeriod;
+    }
     document.getElementById("editModal").classList.add("active");
 }
 
 function closeEdit() {
     document.getElementById("editModal").classList.remove("active");
-    editCardId = null;
+    editLessonId = null;
     editDate = null;
 }
 
 function saveEdit() {
     const replacementDate = document.getElementById("replacement-date").value;
     const note = document.getElementById("replacement-note").value;
-
     if (!replacementDate) return alert("Please select a new date");
 
     fetch("/mark-lesson/", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "X-CSRFToken": getCSRF(),
-        },
-        body: `card_id=${editCardId}&date=${editDate}&is_covered=true&replacement_date=${replacementDate}&note=${encodeURIComponent(note)}`
+        headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": getCSRF() },
+        body: `lesson_id=${editLessonId}&date=${editDate}&replacement_date=${replacementDate}&replacement_period=${document.getElementById("replacement-period").value}&note=${encodeURIComponent(note)}`
     })
     .then(r => r.json())
     .then(data => {
-        const cell = document.getElementById(`cell-${editCardId}-${editDate}`);
-        cell.classList.remove("covered", "replaced");
-        cell.classList.add("replaced");
-        cell.querySelector(".status-badge").className = "status-badge replaced";
-        cell.querySelector(".status-badge").textContent = "↔ Rescheduled";
         closeEdit();
+        // Always reload — rescheduling changes which cells appear/disappear
+        // and DOM manipulation alone can't reliably reflect that
+        location.reload();
+    })
+    .catch(err => {
+        console.error("Save failed:", err);
+        closeEdit();
+        location.reload();
+    });
+}
+
+function updateCell(cell, data) {
+    const badge = cell.querySelector(".status-badge");
+    const btn = cell.querySelector(".btn-covered");
+    if (!btn) return;
+    if (data.is_replaced) {
+        badge.className = "status-badge replaced";
+        badge.textContent = T.rescheduled;
+    } else if (data.is_covered) {
+        cell.classList.remove("replaced");
+        cell.classList.add("covered");
+        badge.className = "status-badge covered";
+        badge.textContent = T.covered;
+        btn.classList.add("active");
+    } else {
+        cell.classList.remove("covered", "replaced");
+        badge.className = "status-badge pending";
+        badge.textContent = T.pending;
+        btn.classList.remove("active");
+    }
+}
+
+function collectCells(container) {
+    return Array.from(container.querySelectorAll(".cell-card"))
+        .filter(c => c.querySelector(".btn-covered") !== null);
+}
+
+function buildBulkPayload(cells, newState) {
+    const ids = [];
+    const dates = [];
+    cells.forEach(cell => {
+        const withoutPrefix = cell.id.replace("cell-", "");
+        const dateStr = withoutPrefix.slice(-10);
+        const lessonId = withoutPrefix.slice(0, withoutPrefix.length - 11);
+        ids.push(lessonId);
+        dates.push(dateStr);
+    });
+    return `lesson_ids=${ids.join(",")}&dates=${dates.join(",")}&is_covered=${newState}`;
+}
+
+function applyBulkResults(results) {
+    results.forEach(r => {
+        const cell = document.getElementById(`cell-${r.lesson_id}-${r.date}`);
+        if (cell) updateCell(cell, r);
+    });
+}
+
+function markWholeWeek(btn, forceState) {
+    const weekIndex = parseInt(btn.getAttribute("data-week"));
+    const weekBlock = document.querySelectorAll(".week-block")[weekIndex];
+    const cells = collectCells(weekBlock);
+    if (cells.length === 0) return;
+
+    customConfirm({
+        icon: forceState ? "✓" : "✕",
+        title: forceState
+            ? (LANG === 'uz' ? "Butun haftani belgilash" : "Mark Whole Week")
+            : (LANG === 'uz' ? "Haftani bekor qilish" : "Unmark Whole Week"),
+        message: forceState
+            ? (LANG === 'uz' ? "Bu haftadagi barcha darslarni o'tildi deb belgilash?" : "Mark all lessons this week as covered?")
+            : (LANG === 'uz' ? "Bu haftadagi barcha belgilarni olib tashlash?" : "Unmark all lessons this week?"),
+        okText: forceState ? (LANG === 'uz' ? "Belgilash" : "Mark All") : (LANG === 'uz' ? "Bekor qilish" : "Unmark All"),
+        okClass: forceState ? "success" : "danger",
+        cancelText: LANG === 'uz' ? "Yo'q" : "Cancel"
+    }, () => {
+        fetch("/mark-lessons-bulk/", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": getCSRF() },
+            body: buildBulkPayload(cells, forceState)
+        }).then(r => r.json()).then(data => {
+            if (data.status === "ok") applyBulkResults(data.results);
+        });
+    });
+}
+
+function markWholeMonth() {
+    const allCells = collectCells(document);
+    if (allCells.length === 0) return;
+    const allCovered = allCells.every(c => c.querySelector(".btn-covered")?.classList.contains("active"));
+    const newState = !allCovered;
+
+
+    customConfirm({
+        icon: newState ? "✓" : "✕",
+        title: newState
+            ? (LANG === 'uz' ? "Butun oyni belgilash" : "Mark Whole Month")
+            : (LANG === 'uz' ? "Oyni bekor qilish" : "Unmark Whole Month"),
+        message: newState
+            ? (LANG === 'uz' ? "Bu oydagi barcha darslarni o'tildi deb belgilash?" : "Mark all lessons this month as covered?")
+            : (LANG === 'uz' ? "Bu oydagi barcha belgilarni olib tashlash?" : "Unmark all lessons this month?"),
+        okText: newState ? (LANG === 'uz' ? "Belgilash" : "Mark All") : (LANG === 'uz' ? "Bekor qilish" : "Unmark All"),
+        okClass: newState ? "success" : "danger",
+        cancelText: LANG === 'uz' ? "Yo'q" : "Cancel"
+    }, () => {
+        fetch("/mark-lessons-bulk/", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": getCSRF() },
+            body: buildBulkPayload(allCells, newState)
+        }).then(r => r.json()).then(data => {
+    if (data.status === "ok") {
+        applyBulkResults(data.results);
+        const btn = document.querySelector('.submit-bar button');
+
+        if (btn) {
+            if (newState) {
+                btn.innerHTML = "✕ " + (LANG === "uz" ? "Butun oyni bekor qilish" : "Cancel Whole Month");
+                btn.style.background = "none";
+                btn.style.color = "#dc3545";
+                btn.style.border = "2px solid #dc3545";
+            } else {
+                btn.innerHTML = "✓ " + (LANG === "uz" ? "Butun oy" : "Whole Month");
+                btn.style.background = "white";
+                btn.style.color = "#1b497d";
+                btn.style.border = "2px solid #1b497d";
+            }
+        }
+    }
+});
     });
 }
 
 function submitReport() {
-    if (!confirm("Are you sure you want to submit your monthly report?")) return;
-    fetch("/submit-report/", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "X-CSRFToken": getCSRF(),
-        },
-        body: `year=${YEAR}&month=${MONTH}`
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.status === "submitted") location.reload();
+    customConfirm({
+        icon: "📤",
+        title: LANG === 'uz' ? "Hisobot yuborish" : "Send Report",
+        message: LANG === 'uz' ? "Oylik hisobotingizni yuborishga ishonchingiz komilmi?" : "Are you sure you want to submit your monthly report?",
+        okText: LANG === 'uz' ? "Yuborish" : "Send",
+        okClass: "",
+        cancelText: LANG === 'uz' ? "Bekor qilish" : "Cancel"
+    }, () => {
+        fetch("/submit-report/", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": getCSRF() },
+            body: `year=${YEAR}&month=${MONTH}`
+        }).then(r => r.json()).then(data => { if (data.status === "submitted") location.reload(); });
+    });
+}
+function enableEdit() {
+    const btn = document.getElementById("editReportBtn");
+    if (btn) {
+        btn.textContent = "📤 {% if lang == 'uz' %}Hisobot yuborish{% else %}Send Report{% endif %}";
+        btn.onclick = function() {
+            window.location.href = "{% url 'preview_report' %}?year=" + YEAR + "&month=" + MONTH;
+        };
+    }
+}
+
+function cancelReport() {
+    customConfirm({
+        icon: "✕",
+        title: LANG === 'uz' ? "Bekor qilish" : "Cancel Submission",
+        message: LANG === 'uz' ? "Yuborishni bekor qilishga ishonchingiz komilmi?" : "Are you sure you want to cancel your submission?",
+        okText: LANG === 'uz' ? "Ha, bekor qilish" : "Yes, Cancel",
+        okClass: "danger",
+        cancelText: LANG === 'uz' ? "Yo'q" : "No"
+    }, () => {
+        fetch("/cancel-report/", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": getCSRF() },
+            body: `year=${YEAR}&month=${MONTH}`
+        }).then(r => r.json()).then(data => { if (data.status === "cancelled") location.reload(); });
     });
 }
 
 document.getElementById("editModal").addEventListener("click", function(e) {
     if (e.target === this) closeEdit();
 });
-</script>
 
+/* ---- Exam attendance counters ---- */
+
+function openExamEdit(field, currentUnit) {
+    const wrap = document.getElementById(`wrap-${field}`);
+    const current = document.getElementById(`value-${field}`).textContent.trim();
+    const unitEN = currentUnit || 'students';
+    const isGroups = unitEN === 'groups';
+    const isUZ = LANG === 'uz';
+
+    wrap.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:8px; width:100%;">
+            <div class="exam-unit-choice">
+                <label>
+                    <input type="radio" name="unit-${field}" value="groups" ${isGroups ? 'checked' : ''}>
+                    ${isUZ ? 'Guruh' : 'Groups'}
+                </label>
+                <label>
+                    <input type="radio" name="unit-${field}" value="students" ${!isGroups ? 'checked' : ''}>
+                    ${isUZ ? 'Talaba' : 'Students'}
+                </label>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <input type="number" min="0" id="input-${field}" value="${current}" class="exam-counter-input"
+                       onkeydown="if(event.key==='Enter') saveExamEdit('${field}'); if(event.key==='Escape') cancelExamEdit('${field}', '${current}', '${unitEN}');">
+                <button class="exam-counter-save" onclick="saveExamEdit('${field}')">✓</button>
+                <button class="exam-counter-cancel" onclick="cancelExamEdit('${field}', '${current}', '${unitEN}')">✕</button>
+            </div>
+        </div>
+    `;
+    const input = document.getElementById(`input-${field}`);
+    input.focus();
+    input.select();
+}
+
+function cancelExamEdit(field, value, unit) {
+    renderExamValue(field, value, unit);
+}
+
+function renderExamValue(field, value, unit) {
+    const wrap = document.getElementById(`wrap-${field}`);
+    const isUZ = LANG === 'uz';
+    const unitLabel = isUZ ? (unit === 'groups' ? 'guruh' : 'talaba') : unit;
+    wrap.innerHTML = `
+        <span class="exam-counter-value" id="value-${field}">${value}</span>
+        <span class="exam-counter-unit" id="unit-${field}" style="font-size:13px; color:#888; margin-left:4px;">${unitLabel}</span>
+        <button class="exam-counter-edit" onclick="openExamEdit('${field}', '${unit}')">✎</button>
+    `;
+}
+
+function saveExamEdit(field) {
+    const input = document.getElementById(`input-${field}`);
+    const radios = document.querySelectorAll(`input[name="unit-${field}"]`);
+    let value = parseInt(input.value, 10);
+    if (isNaN(value) || value < 0) value = 0;
+
+    let unit = 'students';
+    radios.forEach(r => { if (r.checked) unit = r.value; });
+
+    fetch("/update-exam-count/", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": getCSRF() },
+        body: `field=${field}&value=${value}&unit=${unit}&year=${YEAR}&month=${MONTH}`
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === "ok") {
+            renderExamValue(field, data.value, data.unit);
+        } else {
+            alert(data.message || (LANG === 'uz' ? "Saqlashda xatolik" : "Failed to save"));
+            renderExamValue(field, value, unit);
+        }
+    })
+    .catch(() => {
+        alert(LANG === 'uz' ? "Saqlashda xatolik" : "Failed to save");
+    });
+}
+
+let addLessonDate = null;
+let addLessonPeriod = null;
+
+function openAddLesson(date, period) {
+    addLessonDate = date;
+    addLessonPeriod = period;
+    document.getElementById("add-lesson-slot").textContent =
+        `${date}  —  Period ${period}`;
+    document.getElementById("add-subject").value = "";
+    document.getElementById("add-classroom").value = "";
+    document.getElementById("add-class-names").value = "";
+    document.getElementById("add-reason").value = "";
+    document.getElementById("addLessonModal").classList.add("active");
+}
+
+function closeAddLesson() {
+    document.getElementById("addLessonModal").classList.remove("active");
+    addLessonDate = null;
+    addLessonPeriod = null;
+}
+
+function saveAddLesson() {
+    const subject = document.getElementById("add-subject").value.trim();
+    const classroom = document.getElementById("add-classroom").value.trim();
+    const classNames = document.getElementById("add-class-names").value.trim();
+    const reason = document.getElementById("add-reason").value.trim();
+    if (!subject) {
+        alert("{% if lang == 'uz' %}Fan nomini kiriting{% else %}Please enter a subject name{% endif %}");
+        return;
+    }
+
+    fetch("/add-lesson/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRFToken": getCSRF(),
+        },
+       body: `date=${addLessonDate}&period=${addLessonPeriod}&subject_name=${encodeURIComponent(subject)}&classroom_name=${encodeURIComponent(classroom)}&class_names=${encodeURIComponent(classNames)}&reason=${encodeURIComponent(reason)}`
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === "ok") {
+            closeAddLesson();
+            location.reload();
+        } else {
+            alert(data.message || "Error adding lesson");
+        }
+    });
+}
+
+function deleteLesson(lessonId, date) {
+    customConfirm({
+        icon: "🗑️",
+        title: LANG === "uz" ? "Darsni o'chirish" : "Delete Lesson",
+        message: LANG === "uz"
+            ? "Bu darsni o'chirmoqchimisiz?"
+            : "Are you sure you want to delete this lesson?",
+        okText: LANG === "uz" ? "O'chirish" : "Delete",
+        okClass: "danger",
+        cancelText: LANG === "uz" ? "Bekor qilish" : "Cancel"
+    }, () => {
+        fetch(`/delete-lesson/${lessonId}/`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": getCSRF(),
+            },
+            body: ""
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === "ok") {
+                location.reload();
+            } else {
+                alert(data.message || "Cannot delete this lesson");
+            }
+        });
+    });
+}
+
+document.getElementById("addLessonModal").addEventListener("click", function(e) {
+    if (e.target === this) closeAddLesson();
+});
+
+    function customConfirm({ icon = "❓", title = "Are you sure?", message = "", okText = "Confirm", okClass = "", cancelText = "Cancel" }, onConfirm) {
+    document.getElementById("confirmIcon").textContent = icon;
+    document.getElementById("confirmTitle").textContent = title;
+    document.getElementById("confirmMessage").textContent = message;
+
+    const okBtn = document.getElementById("confirmOk");
+    const cancelBtn = document.getElementById("confirmCancel");
+
+    okBtn.textContent = okText;
+    okBtn.className = "confirm-btn-ok" + (okClass ? " " + okClass : "");
+    cancelBtn.textContent = cancelText;
+
+    const modal = document.getElementById("confirmModal");
+    modal.classList.add("active");
+
+    // Clean up old listeners
+    const newOk = okBtn.cloneNode(true);
+    const newCancel = cancelBtn.cloneNode(true);
+    okBtn.parentNode.replaceChild(newOk, okBtn);
+    cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+
+    newOk.textContent = okText;
+    newOk.className = "confirm-btn-ok" + (okClass ? " " + okClass : "");
+    newCancel.textContent = cancelText;
+    setTimeout(() => newOk.focus(), 0);
+
+    newOk.addEventListener("click", () => {
+        modal.classList.remove("active");
+        onConfirm();
+    });
+    newCancel.addEventListener("click", () => {
+        modal.classList.remove("active");
+    });
+    modal.addEventListener("click", function handler(e) {
+        if (e.target === modal) {
+            modal.classList.remove("active");
+            modal.removeEventListener("click", handler);
+        }
+    });
+}
+</script>
+<div class="confirm-overlay" id="confirmModal">
+    <div class="confirm-box">
+        <div class="confirm-icon" id="confirmIcon">❓</div>
+        <div class="confirm-title" id="confirmTitle"></div>
+        <div class="confirm-message" id="confirmMessage"></div>
+        <div class="confirm-actions">
+            <button class="confirm-btn-cancel" id="confirmCancel">Cancel</button>
+            <button class="confirm-btn-ok" id="confirmOk">Confirm</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>

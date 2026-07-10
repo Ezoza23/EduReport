@@ -6,5 +6,8 @@ class TimetableConfig(AppConfig):
     name = 'timetable'
 
     def ready(self):
-        from . import scheduler
-        scheduler.start()
+        try:
+            from . import scheduler
+            scheduler.start()
+        except Exception as e:
+            print(f"Scheduler not started: {e}")

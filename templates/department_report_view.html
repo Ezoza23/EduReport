@@ -1,0 +1,666 @@
+{% load timetable_tags %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ department.name }} — {% if lang == 'uz' %}Bo'lim hisoboti{% else %}Department Report{% endif %}</title>
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; }
+
+        .header {
+            background: #1b497d;
+            color: white;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h2 { font-size: 18px; }
+        .header a {
+            color: white;
+            text-decoration: none;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .header a:hover { background: rgba(255,255,255,0.35); }
+
+        .month-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            padding: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #1b497d;
+        }
+        .month-nav a {
+            color: #1b497d;
+            text-decoration: none;
+            font-size: 24px;
+            padding: 4px 12px;
+            border-radius: 4px;
+            background: white;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+        .month-nav a:hover { background: #e8f0fb; }
+
+        .content { padding: 0 24px 40px 24px; }
+
+        .review-bar {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+            padding: 18px 22px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+        .review-info { font-size: 14px; color: #1b3a6b; font-weight: 600; }
+        .review-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+        .btn-approve {
+            background: #28a745; color: white; border: none;
+            padding: 9px 20px; border-radius: 6px;
+            font-size: 14px; font-weight: bold; cursor: pointer;
+        }
+        .btn-approve:hover { background: #218838; }
+        .btn-reject {
+            background: none; border: 1.5px solid #dc3545; color: #dc3545;
+            padding: 8px 18px; border-radius: 6px;
+            font-size: 14px; font-weight: bold; cursor: pointer;
+        }
+        .btn-reject:hover { background: #dc3545; color: white; }
+        .btn-undo {
+            background: none; border: 1.5px solid #aaa; color: #888;
+            padding: 8px 14px; border-radius: 6px;
+            font-size: 13px; font-weight: bold; cursor: pointer;
+        }
+        .btn-undo:hover { background: #f0f0f0; color: #555; }
+        .btn-approve-all {
+            background: #1b497d; color: white; border: none;
+            padding: 8px 16px; border-radius: 6px;
+            font-size: 13px; font-weight: bold; cursor: pointer;
+        }
+        .btn-approve-all:hover { background: #163d6a; }
+        .btn-mini-approve {
+            border: 1.5px solid #28a745; background: none; color: #28a745;
+            border-radius: 5px; padding: 2px 8px;
+            font-size: 12px; font-weight: bold; cursor: pointer;
+        }
+        .btn-mini-approve:hover { background: #28a745; color: white; }
+        .btn-mini-reject {
+            border: 1.5px solid #dc3545; background: none; color: #dc3545;
+            border-radius: 5px; padding: 2px 8px;
+            font-size: 12px; font-weight: bold; cursor: pointer;
+        }
+        .btn-mini-reject:hover { background: #dc3545; color: white; }
+        .btn-mini-undo {
+            border: 1.5px solid #aaa; background: none; color: #888;
+            border-radius: 5px; padding: 2px 8px;
+            font-size: 11px; cursor: pointer;
+        }
+        .btn-mini-undo:hover { background: #f0f0f0; }
+
+        .status-pill {
+            padding: 7px 16px; border-radius: 16px;
+            font-size: 13px; font-weight: bold;
+        }
+        .status-pill.pending { background: #ffc107; color: #333; }
+        .status-pill.approved { background: #d4edda; color: #155724; }
+        .status-pill.rejected { background: #fdecea; color: #721c24; }
+        .status-pill.none { background: #e9ecef; color: #888; }
+        .admin-note-text { font-size: 12px; color: #888; font-style: italic; margin-top: 6px; }
+
+        .bulk-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f0f2f5;
+        }
+        .bulk-summary { font-size: 12px; color: #888; font-weight: bold; }
+        .bulk-actions { display: flex; gap: 6px; }
+
+        .dl-link {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: white; color: #1b497d; border: 2px solid #1b497d;
+            padding: 8px 16px; border-radius: 6px;
+            text-decoration: none; font-weight: bold; font-size: 13px;
+        }
+        .dl-link:hover { background: #f0f4ff; }
+        .confirm-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.45);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+}
+.confirm-overlay.active { display: flex; }
+.confirm-box {
+    background: white;
+    border-radius: 12px;
+    padding: 28px 32px;
+    min-width: 320px;
+    max-width: 420px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+    text-align: center;
+}
+.confirm-icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+}
+.confirm-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1b3a6b;
+    margin-bottom: 8px;
+}
+.confirm-message {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 24px;
+    line-height: 1.5;
+}
+.confirm-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+.confirm-btn-ok {
+    background: #1b497d;
+    color: white;
+    border: none;
+    padding: 10px 28px;
+    border-radius: 7px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    min-width: 90px;
+}
+.confirm-btn-ok:hover { background: #163d6a; }
+.confirm-btn-ok.danger { background: #dc3545; }
+.confirm-btn-ok.danger:hover { background: #c82333; }
+.confirm-btn-ok.success { background: #28a745; }
+.confirm-btn-ok.success:hover { background: #218838; }
+.confirm-btn-cancel {
+    background: #f0f2f5;
+    color: #555;
+    border: none;
+    padding: 10px 28px;
+    border-radius: 7px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    min-width: 90px;
+}
+.confirm-btn-cancel:hover { background: #e2e5ea; }
+        .table-wrap {
+            overflow-x: auto; background: white; border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+        }
+        table { border-collapse: collapse; min-width: 100%; white-space: nowrap; }
+        th {
+            background: #1b497d; color: white;
+            padding: 10px 8px; text-align: center; font-size: 12px; min-width: 36px;
+        }
+        th.teacher-col { text-align: left; min-width: 200px; padding-left: 16px; }
+        th.exam-col {
+            background: #2e5f94; min-width: 52px; font-size: 10px;
+            line-height: 1.25; white-space: normal; border-left: 2px solid #c5d8f0;
+        }
+        th.total-col { background: #163d6a; min-width: 60px; border-left: 2px solid #c5d8f0; }
+        th.status-col { background: #163d6a; min-width: 90px; }
+        td { border: 1px solid #eaeff7; padding: 10px 8px; text-align: center; font-size: 13px; }
+        td.teacher-name {
+            text-align: left; padding-left: 16px; font-weight: 600;
+            color: #1b3a6b; background: #f7f9fc; border-right: 2px solid #e0e7f0;
+        }
+        td.teacher-name a { color: #1b3a6b; text-decoration: none; }
+        td.teacher-name a:hover { text-decoration: underline; }
+        td.teacher-name.has-pending { background: #fff8e1; font-weight: 800; }
+        td.count-cell { color: #333; font-weight: 500; }
+        td.count-cell.has-lessons { background: #e8f5ec; color: #155724; font-weight: bold; }
+        td.count-cell.zero { color: #ccc; }
+        td.exam-cell { border-left: 2px solid #c5d8f0; color: #ccc; font-weight: 500; }
+        td.exam-cell.has-count { background: #eef4ff; color: #1b497d; font-weight: bold; }
+        td.total-cell {
+            background: #eef4ff; font-weight: bold;
+            color: #1b497d; font-size: 14px; border-left: 2px solid #c5d8f0;
+        }
+        td.status-cell { text-align: center; padding: 6px 4px; }
+        th.holiday-day { background: #c0392b !important; }
+        td.holiday-day { background: #fff5f5 !important; color: #dc3545 !important; }
+        .status-tick { color: #28a745; font-size: 13px; font-weight: bold; }
+        .status-rejected-txt { color: #dc3545; font-size: 13px; font-weight: bold; }
+        .day-header-date { font-size: 13px; font-weight: bold; }
+        .day-header-name { font-size: 10px; color: rgba(255,255,255,0.7); }
+        .no-teachers { text-align: center; padding: 60px; color: #aaa; font-size: 15px; }
+    </style>
+</head>
+<body>
+
+{% if not_submitted_yet %}
+
+<div class="header">
+    <h2>{{ department.name }}</h2>
+    <a href="{% url 'admin_departments' %}">← {% if lang == 'uz' %}Orqaga{% else %}Back{% endif %}</a>
+</div>
+<div class="month-nav">
+    <a href="?year={{ prev.year }}&month={{ prev.month }}">&#8249;</a>
+    {{ month_name }}
+    <a href="?year={{ next.year }}&month={{ next.month }}">&#8250;</a>
+</div>
+<div style="text-align:center; padding:80px 20px; color:#aaa; font-size:16px;">
+    {% if lang == 'uz' %}
+        Bu bo'lim ushbu oy uchun oylik hisobot hali yuborilmagan.
+    {% else %}
+        This department has not submitted a monthly report yet.
+    {% endif %}
+</div>
+
+{% else %}
+
+<div class="header">
+    <h2>{{ department.name }} — {% if lang == 'uz' %}Bo'lim oylik hisoboti{% else %}Department Monthly Report{% endif %}</h2>
+    <a href="{% if is_admin %}{% url 'admin_departments' %}{% else %}{% url 'dean_dashboard' %}{% endif %}">← {% if lang == 'uz' %}Orqaga{% else %}Back{% endif %}</a>
+</div>
+
+<div class="month-nav">
+    <a href="?year={{ prev.year }}&month={{ prev.month }}">&#8249;</a>
+    {{ month_name }}
+    <a href="?year={{ next.year }}&month={{ next.month }}">&#8250;</a>
+</div>
+
+<div class="content">
+
+    <div class="review-bar">
+        <div>
+            {% if dept_report and dept_report.status == "submitted" %}
+                <div class="review-info">
+                    📋 {% if lang == 'uz' %}Yuborgan{% else %}Sent by{% endif %}: {{ dept_report.submitted_by.full_name|default:"Dean" }}
+                </div>
+                {% if dept_report.approval_status == "rejected" and dept_report.admin_note %}
+                <div class="admin-note-text">{% if lang == 'uz' %}Sabab{% else %}Reason{% endif %}: {{ dept_report.admin_note }}</div>
+                {% endif %}
+            {% else %}
+                <div class="review-info" style="color:#aaa;">
+                    {% if lang == 'uz' %}Bo'lim oylik hisoboti hali yuborilmagan.{% else %}Department monthly report not sent yet.{% endif %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="review-actions">
+            {% if dept_report and dept_report.status == "submitted" %}
+                {% if is_admin %}
+                    {% if dept_report.approval_status == "pending" %}
+                        <button class="btn-approve" onclick="reviewDeptReport({{ dept_report.id }}, 'approve')">✓ {% if lang == 'uz' %}Tasdiqlash{% else %}Approve{% endif %}</button>
+                        <button class="btn-reject" onclick="reviewDeptReport({{ dept_report.id }}, 'reject')">✕ {% if lang == 'uz' %}Rad etish{% else %}Reject{% endif %}</button>
+                    {% elif dept_report.approval_status == "approved" %}
+                        <span class="status-pill approved">✓ {% if lang == 'uz' %}Tasdiqlandi{% else %}Approved{% endif %}</span>
+                        <button class="btn-undo" onclick="undoDeptReport({{ dept_report.id }})">↩ Undo</button>
+                    {% elif dept_report.approval_status == "rejected" %}
+                        <span class="status-pill rejected">✗ {% if lang == 'uz' %}Rad etildi{% else %}Rejected{% endif %}</span>
+                        <button class="btn-undo" onclick="undoDeptReport({{ dept_report.id }})">↩ Undo</button>
+                    {% endif %}
+                {% endif %}
+            {% endif %}
+            <a class="dl-link" href="/dean/export/?department_id={{ department.id }}&year={{ year }}&month={{ month }}">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Excel
+            </a>
+        </div>
+    </div>
+
+    {% if not teacher_rows %}
+        <div class="no-teachers">{% if lang == 'uz' %}O'qituvchilar topilmadi.{% else %}No teachers found in this department.{% endif %}</div>
+    {% else %}
+
+        {% with submitted_count=teacher_rows|length %}
+        <div class="bulk-bar">
+            <span class="bulk-summary">
+                {{ month_name }}
+            </span>
+            <span class="bulk-actions">
+                <button class="btn-approve-all" onclick="bulkApproveSubmitted()">✓ {% if lang == 'uz' %}Barchasini tasdiqlash{% else %}Approve All Submitted{% endif %}</button>
+            </span>
+        </div>
+        {% endwith %}
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+    <tr>
+        <th class="teacher-col" rowspan="2">{% if lang == 'uz' %}O'qituvchi{% else %}Teacher{% endif %}</th>
+        {% for week_num, span in week_spans %}
+        <th colspan="{{ span }}" style="background:#163d6a; font-size:11px; letter-spacing:0.5px; border-right:2px solid #2e5f94; border-bottom:1px solid #2e5f94;">
+            {% if lang == 'uz' %}Hafta{% else %}Week{% endif %} {{ week_num }}
+        </th>
+        {% endfor %}
+        <th class="exam-col" rowspan="2">{% if lang == 'uz' %}Yakuniy{% else %}Final{% endif %}</th>
+        <th class="exam-col" rowspan="2">{% if lang == 'uz' %}Oraliq{% else %}Midterm{% endif %}</th>
+        <th class="exam-col" rowspan="2">{% if lang == 'uz' %}Qayta{% else %}Retake{% endif %}</th>
+        <th class="total-col" rowspan="2">{% if lang == 'uz' %}Jami{% else %}Total{% endif %}</th>
+        <th class="status-col" rowspan="2">{% if lang == 'uz' %}Holat{% else %}Status{% endif %}</th>
+    </tr>
+    <tr>
+        {% for d in working_days %}
+        {% with holiday_name=holidays|get_item:d %}
+        <th {% if holiday_name %}class="holiday-day"{% endif %} style="min-width:36px;">
+            <div class="day-header-date">{{ d|date:"d" }}</div>
+            <div class="day-header-name">{{ tr.days_short|index:d.weekday }}</div>
+            {% if holiday_name %}<div style="font-size:9px;">🔴</div>{% endif %}
+        </th>
+        {% endwith %}
+        {% endfor %}
+    </tr>
+</thead>
+
+                <tbody>
+                    {% for row in teacher_rows %}
+                    <tr>
+                        <td class="teacher-name {% if row.report and row.report.status == 'submitted' %}has-pending{% endif %}">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+        <a href="{% url 'view_teacher_report' row.teacher.id %}?year={{ year }}&month={{ month }}"
+           style="color:#1b3a6b; text-decoration:none;">
+            {{ row.teacher.full_name }}
+        </a>
+        {% if is_admin and row.report and row.report.status == "submitted" and row.report.dean_approval == "approved" %}
+        <a href="/download-report/{{ row.teacher.id }}/?year={{ year }}&month={{ month }}"
+           title="Download Excel report"
+           style="color:#aaa; display:inline-flex; flex-shrink:0;"
+           onclick="event.stopPropagation()">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+        </a>
+        {% endif %}
+    </div>
+</td>
+                        {% for d in working_days %}
+                        {% with count=row.day_counts|get_item:d holiday_name=holidays|get_item:d %}
+                        <td class="count-cell {% if count %}has-lessons{% else %}zero{% endif %} {% if holiday_name %}holiday-day{% endif %}">
+                            {% if holiday_name %}🔴{% elif count %}{{ count }}{% else %}—{% endif %}
+                        </td>
+                        {% endwith %}
+                        {% endfor %}
+                        <td class="exam-cell {% if row.final_exam_count %}has-count{% endif %}">
+    {% if row.final_exam_count %}
+        {{ row.final_exam_count }}
+        <span style="font-size:10px; color:#888;">{% if lang == 'uz' %}{% if row.final_exam_unit == 'groups' %}g{% else %}t{% endif %}{% else %}{% if row.final_exam_unit == 'groups' %}gr{% else %}st{% endif %}{% endif %}</span>
+    {% else %}—{% endif %}
+</td>
+<td class="exam-cell {% if row.midterm_exam_count %}has-count{% endif %}">
+    {% if row.midterm_exam_count %}
+        {{ row.midterm_exam_count }}
+        <span style="font-size:10px; color:#888;">{% if lang == 'uz' %}{% if row.midterm_exam_unit == 'groups' %}g{% else %}t{% endif %}{% else %}{% if row.midterm_exam_unit == 'groups' %}gr{% else %}st{% endif %}{% endif %}</span>
+    {% else %}—{% endif %}
+</td>
+<td class="exam-cell {% if row.retake_exam_count %}has-count{% endif %}">
+    {% if row.retake_exam_count %}
+        {{ row.retake_exam_count }}
+        <span style="font-size:10px; color:#888;">{% if lang == 'uz' %}{% if row.retake_exam_unit == 'groups' %}g{% else %}t{% endif %}{% else %}{% if row.retake_exam_unit == 'groups' %}gr{% else %}st{% endif %}{% endif %}</span>
+    {% else %}—{% endif %}
+</td>
+                        <td class="total-cell">{{ row.total }}</td>
+                        <td class="status-cell">
+    {% if row.report and row.report.status == "submitted" %}
+        {% if row.report.dean_approval == "pending" %}
+            <span style="font-size:10px; color:#856404; font-weight:bold; line-height:1.3; display:inline-block;">
+                {% if lang == 'uz' %}Dekan kutilmoqda{% else %}Waiting for Dean{% endif %}
+            </span>
+        {% elif row.report.dean_approval == "approved" %}
+            {% if is_admin %}
+                {% if row.report.admin_approval == "pending" %}
+                    <button class="btn-mini-approve" onclick="reviewTeacherReport({{ row.report.id }}, 'approve')" title="Approve">✓</button>
+                    <button class="btn-mini-reject" onclick="reviewTeacherReport({{ row.report.id }}, 'reject')" title="Reject">✕</button>
+                {% elif row.report.admin_approval == "approved" %}
+    <span class="status-tick">✓</span>
+    <button class="btn-mini-undo"
+            onclick="undoTeacherReport({{ row.report.id }}, 'admin')">
+        ↩
+    </button>
+
+{% elif row.report.admin_approval == "rejected" %}
+    <span class="status-rejected-txt">✕</span>
+    <button class="btn-mini-undo"
+            onclick="undoTeacherReport({{ row.report.id }}, 'admin')">
+        ↩
+    </button>
+                {% endif %}
+            {% else %}
+                {% if row.report.dean_approval == "approved" %}
+                    <span class="status-tick">✓</span>
+                {% endif %}
+            {% endif %}
+        {% elif row.report.dean_approval == "rejected" %}
+            <span class="status-rejected-txt">✕</span>
+        {% endif %}
+    {% else %}
+        <span style="color:#ccc;">—</span>
+    {% endif %}
+</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+
+</div>
+
+<script>
+const DEPT_ID = {{ department.id }};
+const YEAR = {{ year }};
+const MONTH = {{ month }};
+const IS_ADMIN = {{ is_admin|yesno:"true,false" }};
+const LANG = "{{ lang }}";
+
+function getCSRF() {
+    const name = 'csrftoken';
+    const cookies = document.cookie.split(';');
+    for (let c of cookies) {
+        c = c.trim();
+        if (c.startsWith(name + '=')) return decodeURIComponent(c.slice(name.length + 1));
+    }
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.content : '';
+}
+
+function customConfirm({ icon="❓", title="Are you sure?", message="", okText="Confirm", okClass="", cancelText="Cancel" }, onConfirm) {
+    document.getElementById("confirmIcon").textContent = icon;
+    document.getElementById("confirmTitle").textContent = title;
+    document.getElementById("confirmMessage").textContent = message;
+    const modal = document.getElementById("confirmModal");
+    modal.classList.add("active");
+    const okBtn = document.getElementById("confirmOk");
+    const cancelBtn = document.getElementById("confirmCancel");
+    const newOk = okBtn.cloneNode(true);
+    const newCancel = cancelBtn.cloneNode(true);
+    okBtn.parentNode.replaceChild(newOk, okBtn);
+    cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+    newOk.textContent = okText;
+    newOk.className = "confirm-btn-ok" + (okClass ? " " + okClass : "");
+    newCancel.textContent = cancelText;
+    setTimeout(() => newOk.focus(), 0);
+    newOk.addEventListener("click", () => { modal.classList.remove("active"); onConfirm(); });
+    newCancel.addEventListener("click", () => { modal.classList.remove("active"); });
+    modal.addEventListener("click", function h(e) { if (e.target === modal) { modal.classList.remove("active"); modal.removeEventListener("click", h); } });
+}
+
+function customPrompt({ icon="❓", title="", message="", placeholder="", okText="Confirm", okClass="danger", cancelText="Cancel" }, onConfirm) {
+    document.getElementById("confirmIcon").textContent = icon;
+    document.getElementById("confirmTitle").textContent = title;
+    document.getElementById("confirmMessage").innerHTML = `<div style="margin-bottom:10px;">${message}</div><input type="text" id="promptInput" placeholder="${placeholder}" style="width:100%;padding:9px 12px;border:1.5px solid #dde3ed;border-radius:7px;font-size:14px;outline:none;">`;
+    const modal = document.getElementById("confirmModal");
+    modal.classList.add("active");
+    setTimeout(() => { const inp = document.getElementById("promptInput"); if(inp) inp.focus(); }, 100);
+    const okBtn = document.getElementById("confirmOk");
+    const cancelBtn = document.getElementById("confirmCancel");
+    const newOk = okBtn.cloneNode(true);
+    const newCancel = cancelBtn.cloneNode(true);
+    okBtn.parentNode.replaceChild(newOk, okBtn);
+    cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+    newOk.textContent = okText;
+    newOk.className = "confirm-btn-ok" + (okClass ? " " + okClass : "");
+    newCancel.textContent = cancelText;
+    setTimeout(() => newOk.focus(), 0);
+    newOk.addEventListener("click", () => { const val = document.getElementById("promptInput")?.value || ""; modal.classList.remove("active"); onConfirm(val); });
+    newCancel.addEventListener("click", () => { modal.classList.remove("active"); });
+    modal.addEventListener("click", function h(e) { if (e.target === modal) { modal.classList.remove("active"); modal.removeEventListener("click", h); } });
+}
+
+function reviewDeptReport(reportId, decision) {
+    if (decision === "reject") {
+        customPrompt({
+            icon: "✕",
+            title: LANG === 'uz' ? "Bo'lim hisobotini rad etish" : "Reject Department Report",
+            message: LANG === 'uz' ? "Rad etish sababini kiriting:" : "Enter reason for rejection:",
+            placeholder: LANG === 'uz' ? "Sabab (ixtiyoriy)..." : "Reason (optional)...",
+            okText: LANG === 'uz' ? "Rad etish" : "Reject",
+            okClass: "danger",
+            cancelText: LANG === 'uz' ? "Bekor qilish" : "Cancel"
+        }, (note) => {
+            fetch(`/review-department-report/${reportId}/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": getCSRF() },
+                body: `decision=reject&note=${encodeURIComponent(note)}`
+            }).then(r => r.json()).then(data => { if (data.status === "ok") location.reload(); else alert(data.message || "Action failed"); });
+        });
+    } else {
+        customConfirm({
+            icon: "✓",
+            title: LANG === 'uz' ? "Bo'lim hisobotini tasdiqlash" : "Approve Department Report",
+            message: LANG === 'uz' ? "Bu bo'lim oylik hisobotini tasdiqlaysizmi?" : "Approve this department's monthly report?",
+            okText: LANG === 'uz' ? "Tasdiqlash" : "Approve",
+            okClass: "success",
+            cancelText: LANG === 'uz' ? "Bekor qilish" : "Cancel"
+        }, () => {
+            fetch(`/review-department-report/${reportId}/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": getCSRF() },
+                body: `decision=approve&note=`
+            }).then(r => r.json()).then(data => { if (data.status === "ok") location.reload(); else alert(data.message || "Action failed"); });
+        });
+    }
+}
+
+function undoDeptReport(reportId) {
+    customConfirm({
+        icon: "↩",
+        title: LANG === 'uz' ? "Qarorni bekor qilish" : "Undo Decision",
+        message: LANG === 'uz' ? "Bo'lim hisoboti qarorini bekor qilasizmi?" : "Undo this department report decision?",
+        okText: LANG === 'uz' ? "Ha, bekor qilish" : "Yes, Undo",
+        okClass: "danger",
+        cancelText: LANG === 'uz' ? "Yo'q" : "Cancel"
+    }, () => {
+        fetch(`/review-department-report/${reportId}/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": getCSRF() },
+            body: `decision=undo`
+        }).then(r => r.json()).then(data => { if (data.status === "ok") location.reload(); else alert(data.message || "Action failed"); });
+    });
+}
+
+function reviewTeacherReport(reportId, decision) {
+    if (decision === "reject") {
+        customPrompt({
+            icon: "✕",
+            title: LANG === 'uz' ? "Hisobotni rad etish" : "Reject Report",
+            message: LANG === 'uz' ? "Rad etish sababini kiriting:" : "Enter reason for rejection:",
+            placeholder: LANG === 'uz' ? "Sabab (ixtiyoriy)..." : "Reason (optional)...",
+            okText: LANG === 'uz' ? "Rad etish" : "Reject",
+            okClass: "danger",
+            cancelText: LANG === 'uz' ? "Bekor qilish" : "Cancel"
+        }, (note) => {
+            fetch(`/review-teacher-report/${reportId}/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": getCSRF() },
+                body: `decision=reject&note=${encodeURIComponent(note)}`
+            }).then(r => r.json()).then(data => { if (data.status === "ok") location.reload(); else alert(data.message || "Action failed"); });
+        });
+    } else {
+        customConfirm({
+            icon: "✓",
+            title: LANG === 'uz' ? "Hisobotni tasdiqlash" : "Approve Report",
+            message: LANG === 'uz' ? "Bu o'qituvchi hisobotini tasdiqlaysizmi?" : "Approve this teacher's report?",
+            okText: LANG === 'uz' ? "Tasdiqlash" : "Approve",
+            okClass: "success",
+            cancelText: LANG === 'uz' ? "Bekor qilish" : "Cancel"
+        }, () => {
+            fetch(`/review-teacher-report/${reportId}/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": getCSRF() },
+                body: `decision=approve&note=`
+            }).then(r => r.json()).then(data => { if (data.status === "ok") location.reload(); else alert(data.message || "Action failed"); });
+        });
+    }
+}
+
+function undoTeacherReport(reportId, actor) {
+    customConfirm({
+        icon: "↩",
+        title: LANG === 'uz' ? "Qarorni bekor qilish" : "Undo Review",
+        message: LANG === 'uz' ? "Bu qarorni bekor qilasizmi?" : "Undo this review decision?",
+        okText: LANG === 'uz' ? "Ha, bekor qilish" : "Yes, Undo",
+        okClass: "danger",
+        cancelText: LANG === 'uz' ? "Yo'q" : "Cancel"
+    }, () => {
+        fetch(`/review-teacher-report/${reportId}/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": getCSRF() },
+            body: `decision=undo&actor=${actor}`
+        }).then(r => r.json()).then(data => { if (data.status === "ok") location.reload(); else alert(data.message || "Action failed"); });
+    });
+}
+
+function bulkApproveSubmitted() {
+    customConfirm({
+        icon: "✓",
+        title: LANG === 'uz' ? "Barchasini tasdiqlash" : "Approve All Submitted",
+        message: LANG === 'uz' ? "Bu bo'limdagi barcha yuborilgan hisobotlarni tasdiqlaysizmi?" : "Approve all submitted reports in this department?",
+        okText: LANG === 'uz' ? "Ha, tasdiqlash" : "Approve All",
+        okClass: "success",
+        cancelText: LANG === 'uz' ? "Bekor qilish" : "Cancel"
+    }, () => {
+        fetch(`/bulk-review-teacher-reports/${DEPT_ID}/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": getCSRF() },
+            body: `decision=approve&scope=submitted&year=${YEAR}&month=${MONTH}`
+        }).then(r => r.json()).then(data => { if (data.status === "ok") location.reload(); else alert(data.message || "Action failed"); });
+    });
+}
+</script>
+
+{% endif %}
+<div class="confirm-overlay" id="confirmModal">
+    <div class="confirm-box">
+        <div class="confirm-icon" id="confirmIcon">❓</div>
+        <div class="confirm-title" id="confirmTitle"></div>
+        <div class="confirm-message" id="confirmMessage"></div>
+        <div class="confirm-actions">
+            <button class="confirm-btn-cancel" id="confirmCancel">Cancel</button>
+            <button class="confirm-btn-ok" id="confirmOk">Confirm</button>
+        </div>
+    </div>
+</div>
+</body>
+</html>

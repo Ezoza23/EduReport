@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Teacher — {{ teacher.full_name }}</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; }
+
+        .header {
+            background: #1b497d;
+            color: white;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+        .header h2 { font-size: 18px; color: white; }
+        .header-links { display: flex; gap: 12px; }
+        .header a {
+            color: white;
+            text-decoration: none;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            border: 1px solid rgba(255,255,255,0.4);
+        }
+        .header a:hover { background: rgba(255,255,255,0.35); }
+
+        .content {
+            max-width: 560px;
+            margin: 40px auto;
+            padding: 0 16px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+
+        .teacher-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1b3a6b;
+            margin-bottom: 4px;
+        }
+        .teacher-id {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 14px;
+            margin-top: 24px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #eee;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: bold;
+            color: #555;
+            display: block;
+            margin-bottom: 5px;
+            margin-top: 14px;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid #dde3ed;
+            border-radius: 7px;
+            font-size: 14px;
+            outline: none;
+            transition: border 0.15s;
+        }
+        input:focus, select:focus { border-color: #1b497d; }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 14px;
+        }
+        .checkbox-row input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .checkbox-row label {
+            margin: 0;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .hint {
+            font-size: 11px;
+            color: #aaa;
+            margin-top: 4px;
+        }
+
+        .btn-save {
+            width: 100%;
+            background: #1b497d;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 7px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 28px;
+            letter-spacing: 0.3px;
+        }
+        .btn-save:hover { background: #163d6a; }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 7px;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-error { background: #fdecea; color: #721c24; border: 1px solid #f5c6cb; }
+
+        .current-account {
+            background: #f0fff4;
+            border: 1px solid #c3e6cb;
+            border-radius: 7px;
+            padding: 12px 16px;
+            font-size: 13px;
+            color: #155724;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h2>✏️ {% if lang == 'uz' %}O'qituvchini tahrirlash{% else %}Edit Teacher{% endif %}</h2>
+    <div class="header-links">
+        <a href="/set-language/?lang={% if lang == 'en' %}uz{% else %}en{% endif %}&next={{ request.path }}"
+           style="font-weight:bold; font-size:13px;">
+            {% if lang == 'en' %}🇺🇿 UZ{% else %}🇬🇧 EN{% endif %}
+        </a>
+        <a href="{% url 'admin_panel' %}">← {% if lang == 'uz' %}O'qituvchilarga qaytish{% else %}Back to Teachers{% endif %}</a>
+        <a href="{% url 'logout' %}">{% if lang == 'uz' %}Chiqish{% else %}Logout{% endif %}</a>
+    </div>
+</div>
+
+<div class="content">
+    <div class="card">
+        <div class="teacher-title">{{ teacher.full_name }}</div>
+        <div class="teacher-id">EduPage ID: {{ teacher.edupage_id }}</div>
+
+        {% if message %}
+        <div class="alert alert-success">✓ {{ message }}</div>
+        {% endif %}
+        {% if error %}
+        <div class="alert alert-error">✗ {{ error }}</div>
+        {% endif %}
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="section-title">{% if lang == 'uz' %}Hisob sozlamalari{% else %}Account Settings{% endif %}</div>
+
+            {% if teacher.user %}
+            <div class="current-account">
+                ✓ {% if lang == 'uz' %}Hisob mavjud — Login:{% else %}Account exists — Username:{% endif %} <strong>{{ teacher.user.username }}</strong>
+            </div>
+            {% endif %}
+
+            <label>{% if lang == 'uz' %}Login{% else %}Username{% endif %}</label>
+            <input type="text" name="username"
+                   value="{{ teacher.user.username|default:'' }}"
+                   placeholder="{% if lang == 'uz' %}Loginni kiriting{% else %}Enter username{% endif %}">
+
+            <label>{% if lang == 'uz' %}Parol{% else %}Password{% endif %}</label>
+            <input type="password" name="password" placeholder="{% if teacher.user %}{% if lang == 'uz' %}O'zgartirmaslik uchun bo'sh qoldiring{% else %}Leave blank to keep current{% endif %}{% else %}{% if lang == 'uz' %}Parolni kiriting{% else %}Enter password{% endif %}{% endif %}">
+            <div class="hint">{% if teacher.user %}{% if lang == 'uz' %}Joriy parolni saqlash uchun bo'sh qoldiring.{% else %}Leave blank to keep the current password.{% endif %}{% else %}{% if lang == 'uz' %}Yangi hisoblar uchun majburiy.{% else %}Required for new accounts.{% endif %}{% endif %}</div>
+
+            <div class="section-title">{% if lang == 'uz' %}Bo'lim va lavozim{% else %}Department & Role{% endif %}</div>
+
+            <label>{% if lang == 'uz' %}Bo'lim{% else %}Department{% endif %}</label>
+            <select name="department">
+                <option value="">— {% if lang == 'uz' %}Bo'lim yo'q{% else %}No Department{% endif %} —</option>
+                {% for dept in departments %}
+                <option value="{{ dept.id }}"
+                    {% if teacher.department and teacher.department.id == dept.id %}selected{% endif %}>
+                    {{ dept.name }}
+                </option>
+                {% endfor %}
+            </select>
+            <div class="checkbox-row">
+                <input type="checkbox" name="is_dean" id="is_dean" {% if teacher.is_dean %}checked{% endif %}>
+                <label for="is_dean">{% if lang == 'uz' %}Bu o'qituvchi dekan{% else %}This teacher is a Dean{% endif %}</label>
+            </div>
+
+            <button type="submit" class="btn-save">💾 {% if lang == 'uz' %}O'zgarishlarni saqlash{% else %}Save Changes{% endif %}</button>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

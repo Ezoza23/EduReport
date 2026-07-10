@@ -1,0 +1,21 @@
+# Django
+*.pyc
+__pycache__/
+db.sqlite3
+*.log
+media/
+
+# Environment
+.env
+venv/
+env/
+
+# Anaconda / IDE
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+SECRET_KEY = 'django-insecure-f!_h)ktru#sjthkh7wr&-olnqtpg-9^ft+%9kk&mamcu9@7k8w'
