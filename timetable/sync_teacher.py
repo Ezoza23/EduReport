@@ -129,11 +129,10 @@ def sync_teacher_schedule(teacher, db=None):
                     )
 
                     if not created:
-                        # Update future lessons with latest EduPage data
                         scheduled.subject = subject
                         scheduled.classroom = classroom
                         scheduled.class_names = class_names
-                        sl.lesson_type = lesson_type
+                        scheduled.lesson_type = lesson_type
                         scheduled.save()
                         updated_count += 1
                     else:

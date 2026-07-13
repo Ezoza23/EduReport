@@ -108,9 +108,26 @@ DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 PERIODS = ["1", "2", "3", "4", "5", "6", "7", "8"]
 
 
-def get_lesson_type(classroom_name):
-    if classroom_name and "lecture" in classroom_name.lower():
+def get_lesson_type(subject_name, classroom_name):
+    subject_lower = (subject_name or "").lower()
+    classroom_lower = (classroom_name or "").lower()
+
+    # Specific exam types from subject name — checked first, override room type
+    if any(k in subject_lower for k in ["final exam", "yakuniy imtihon", "yakuniy"]):
+        return "final_exam"
+    if any(k in subject_lower for k in ["midterm exam", "midterm", "oraliq nazorat", "oraliq", "mid-term"]):
+        return "midterm_exam"
+    if any(k in subject_lower for k in ["retake exam", "retake", "qayta topshirish", "qayta"]):
+        return "retake_exam"
+    if any(k in subject_lower for k in ["exam", "imtihon", "test"]):
+        return "exam"
+
+    # Room type — only reached if no exam keyword in subject
+    if any(k in classroom_lower for k in ["lecture", "ma'ruza", "auditorium", "hall", "aula"]):
         return "lecture"
+    if any(k in classroom_lower for k in ["lab", "seminar"]):
+        return "seminar"
+
     return "seminar"
 
 
@@ -1276,27 +1293,7 @@ def admin_red_days(request):
         "lang": lang,
     })
 
-def get_lesson_type(subject_name, classroom_name):
-    subject_lower = (subject_name or "").lower()
-    classroom_lower = (classroom_name or "").lower()
 
-    # Check subject name first — specific exam types
-    if any(k in subject_lower for k in ["final", "yakuniy"]):
-        return "final_exam"
-    if any(k in subject_lower for k in ["midterm", "oraliq", "mid-term"]):
-        return "midterm_exam"
-    if any(k in subject_lower for k in ["retake", "qayta", "repeat"]):
-        return "retake_exam"
-    if any(k in subject_lower for k in ["exam", "imtihon", "test"]):
-        return "exam"
-
-    # Only check room type if no exam keyword found in subject
-    if "lecture" in classroom_lower or "ma'ruza" in classroom_lower:
-        return "lecture"
-    if "lab" in classroom_lower or "seminar" in classroom_lower:
-        return "seminar"
-
-    return "seminar"
 
 @login_required(login_url="login")
 @require_POST
